@@ -10,15 +10,6 @@ AutoVid 是一个基于AI的视频自动生成与发布平台，能够：
 - 语音合成
 - 一键发布到多平台
 
-## 团队
-
-| 角色 | 职责 |
-|------|------|
-| 产品经理 | 需求分析、任务调度、验收 |
-| AI算法工程师 | AI智能体功能实现 |
-| 架构师 | 后端/前端架构 |
-| 测试工程师 | 测试与质量保障 |
-
 ## 技术栈
 
 - **AI引擎**: Python, LangChain, OpenAI API / Claude API
@@ -32,11 +23,10 @@ AutoVid 是一个基于AI的视频自动生成与发布平台，能够：
 ```
 AutoVid/
 ├── src/
-│   ├── ai/          # AI模块（视频生成、文案、语音）
+│   ├── ai/          # AI模块
 │   ├── backend/     # 后端服务
 │   └── frontend/    # 前端界面
 ├── tests/           # 测试代码
-├── tasks/           # 任务文件
 ├── docs/            # 文档
 └── media/           # 媒体文件
 ```
@@ -54,9 +44,6 @@ source venv/bin/activate
 
 # 安装依赖
 pip install -r requirements.txt
-
-# 运行服务
-python src/backend/main.py
 ```
 
 ## 许可证
