@@ -1,0 +1,1 @@
+# AutoVid Frontend Module
