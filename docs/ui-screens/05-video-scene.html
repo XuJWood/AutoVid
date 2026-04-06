@@ -1,0 +1,273 @@
+<!-- 视频生成 - 场景配置 -->
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AutoVid - 场景配置</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#f6f6fb",
+                        "on-error": "#ffefef",
+                        "surface-container": "#e7e8ee",
+                        "primary-fixed": "#9695ff",
+                        "outline": "#75777b",
+                        "on-secondary-container": "#00468e",
+                        "primary-dim": "#3d38c5",
+                        "surface-dim": "#d2d4db",
+                        "outline-variant": "#acadb1",
+                        "secondary-fixed": "#bcd2ff",
+                        "primary-container": "#9695ff",
+                        "error": "#b41340",
+                        "tertiary": "#973773",
+                        "surface-variant": "#dbdde3",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary-fixed": "#000000",
+                        "on-tertiary-fixed-variant": "#6c104f",
+                        "on-surface-variant": "#5a5b60",
+                        "on-primary": "#f4f1ff",
+                        "inverse-surface": "#0c0e12",
+                        "primary": "#4a47d2",
+                        "on-secondary": "#eff2ff",
+                        "on-background": "#2d2f33",
+                        "tertiary-dim": "#882a67",
+                        "secondary-fixed-dim": "#a5c5ff",
+                        "secondary-container": "#bcd2ff",
+                        "tertiary-fixed-dim": "#ed7ebe",
+                        "error-container": "#f74b6d",
+                        "on-error-container": "#510017",
+                        "primary-fixed-dim": "#8686ff",
+                        "error-dim": "#a70138",
+                        "on-tertiary-fixed": "#350025",
+                        "background": "#f6f6fb",
+                        "tertiary-container": "#fd8bcc",
+                        "inverse-primary": "#8382ff",
+                        "inverse-on-surface": "#9c9da1",
+                        "on-primary-container": "#10007f",
+                        "secondary-dim": "#004e9d",
+                        "surface-bright": "#f6f6fb",
+                        "on-secondary-fixed": "#00336b",
+                        "surface-container-low": "#f0f0f6",
+                        "surface-container-highest": "#dbdde3",
+                        "surface-container-high": "#e1e2e8",
+                        "tertiary-fixed": "#fd8bcc",
+                        "on-secondary-fixed-variant": "#004f9f",
+                        "surface-tint": "#4a47d2",
+                        "on-tertiary-container": "#610246",
+                        "on-tertiary": "#ffeff4",
+                        "secondary": "#005ab2",
+                        "on-surface": "#2d2f33",
+                        "on-primary-fixed-variant": "#16009b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f6f6fb; color: #2d2f33; }
+        .font-headline { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #dbdde3; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 bg-[#f6f6fb] bg-opacity-80 backdrop-blur-xl flex justify-between items-center h-16 px-8 w-full">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tight text-[#4a47d2] font-headline">AutoVid</span>
+<nav class="hidden md:flex items-center gap-6">
+<a class="font-manrope text-sm font-medium text-[#5a5b60] hover:text-[#4a47d2] transition-colors scale-95 duration-200" href="#">短剧创作</a>
+<a class="font-manrope text-sm font-medium text-[#4a47d2] border-b-2 border-[#4a47d2] pb-1 scale-95 duration-200" href="#">视频生成</a>
+<a class="font-manrope text-sm font-medium text-[#5a5b60] hover:text-[#4a47d2] transition-colors scale-95 duration-200" href="#">我的项目</a>
+<a class="font-manrope text-sm font-medium text-[#5a5b60] hover:text-[#4a47d2] transition-colors scale-95 duration-200" href="#">角色库</a>
+<a class="font-manrope text-sm font-medium text-[#5a5b60] hover:text-[#4a47d2] transition-colors scale-95 duration-200" href="#">模板中心</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container overflow-hidden">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="minimalist professional user profile avatar in a clean studio lighting setup" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXn71KHbsdnBohPKqL0PqXPUl1KJ9rG79pQC2pp_bAhFZOqus2_qUaICGT1bnBlI9akSiaZgBXuyDb9YCyyfv5qZ2YBqOeG5Ux2gwbafF_3k28gmims1t3C261KUXY_6RBwVJNbLu3u_hNSkINUOXUFjVBo9hNRhhzcCTsJ6WWKDtgmLHC3FdAjEcJxi4HSG75zRLrPZOjWRVBt3DR0ui7Q3KxZpi715PaL3jSg88Cd7ZI58cnLnlEGtsDNmoFC3pw5thstLHuZ-o"/>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-8 max-w-[1600px] mx-auto grid grid-cols-12 gap-8 h-screen">
+<!-- Left: Character Selection -->
+<aside class="col-span-12 lg:col-span-3 flex flex-col gap-6">
+<div class="flex justify-between items-end">
+<h2 class="text-xl font-bold font-headline tracking-tight">角色选择</h2>
+<span class="text-xs text-on-surface-variant font-medium">已选 1/1</span>
+</div>
+<div class="bg-surface-container-low rounded-lg p-6 flex-1 overflow-y-auto custom-scrollbar">
+<div class="grid grid-cols-2 gap-4">
+<!-- Character Card 1 (Active) -->
+<div class="group relative aspect-[3/4] rounded-lg overflow-hidden ring-2 ring-primary bg-surface-container-lowest cursor-pointer transition-all hover:-translate-y-1">
+<img class="w-full h-full object-cover" data-alt="cinematic portrait of a middle-aged man with sharp features wearing a dark futuristic techwear jacket in soft ambient blue light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjvSIzVmXRNiD64TRUXLoBqs2mAIxf2hkyCJ4dZDhdGCY3JZZbr0XFiqgB0IkPbPw8hcjV2fn3gn8SzW93QLwLw6vV6plbzH_v7a4P6pt8-TJWEZuno28Ueevlo3WHTTlv0uv--U32uP64PaEAID5I6h1f0yDo1v73HMeRPb4rHAK8h6dzbfkMcmrIIZlVVugWZrLi1qcu12wM2K_Iymln_OAOnmxHLeQ-IgWY3MkuPFdClInuHj4uC3mNndR3DK96U6-7EegDlK8"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-3 left-3">
+<p class="text-white text-xs font-bold">林克 (主角)</p>
+</div>
+<div class="absolute top-2 right-2 bg-primary text-white p-1 rounded-full scale-75">
+<span class="material-symbols-outlined text-[16px]" data-icon="check">check</span>
+</div>
+</div>
+<!-- Character Card 2 -->
+<div class="group relative aspect-[3/4] rounded-lg overflow-hidden bg-surface-container-lowest cursor-pointer transition-all hover:ring-2 hover:ring-outline-variant hover:-translate-y-1">
+<img class="w-full h-full object-cover opacity-80" data-alt="dramatic headshot of a young woman with intense expression wearing an elegant minimal outfit in a clean grey studio setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBO1tuiP2y8Ue7VzHeGn5WUs4wSGCzTnynsnZ_HMPn_H9bm3zvn3sxQInKss4k5MivDkZB_O-woPdd6KPbIf5ijsaLIsEk-UBFoP3zfKxzLmIjDlXh5Lyok_4dJKuLJCzDTyieejKMznBmRv9bfY6gDe1_gm7U7kYOqWIw3kgJ2_YOmh_EaF_gR2fv--tCWl8D88SN2hUoMMK-aJ2rKfhwLhh8c6wNxfSdSHGHk1NJB1uSIMwMGIn_gvjRuIoEEnAxezIQckMsvyoc"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+<div class="absolute bottom-3 left-3">
+<p class="text-white text-xs font-medium">苏雅</p>
+</div>
+</div>
+<!-- Character Card 3 -->
+<div class="group relative aspect-[3/4] rounded-lg overflow-hidden bg-surface-container-lowest cursor-pointer transition-all hover:ring-2 hover:ring-outline-variant hover:-translate-y-1">
+<img class="w-full h-full object-cover opacity-80" data-alt="professional male portrait with high-contrast lighting emphasizing textures of a wool coat against a dark blurred urban background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDai32JjnmqO2QUC_0bjnPhNj41JkzTAhMqDzQZHXP7I5TG_uhOmeBnn9fkbKF3cxSozduj1SKqrgo9R5E9_w6j7uU29ypG9MP-rKBG9oJKgQiRG4_wFxWgYq2rqAXnB9BiWm9--8fIEbmz4Qfvvj8xka3zFzt831J1ZMtoM4U3JLlPreRC6-yJ8V36TvLtg44b-lVPrvTawZ8SzjrKrKkF8BpV2qJ7T0xkv4r7mvzszY-Er-s-YI3N7o91IfOlo55rdcNU-2HzwDc"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+<div class="absolute bottom-3 left-3">
+<p class="text-white text-xs font-medium">大卫</p>
+</div>
+</div>
+<!-- Add Character -->
+<div class="aspect-[3/4] rounded-lg border-2 border-dashed border-outline-variant flex flex-col items-center justify-center gap-2 text-on-surface-variant hover:bg-surface-container-high cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-3xl" data-icon="add">add</span>
+<span class="text-xs font-medium">新建角色</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Center/Right: Scene Configuration -->
+<section class="col-span-12 lg:col-span-9 flex flex-col gap-8">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1">
+<!-- Prompting Section -->
+<div class="flex flex-col gap-6">
+<div class="flex flex-col gap-2">
+<h2 class="text-xl font-bold font-headline tracking-tight">场景动作描述</h2>
+<p class="text-sm text-on-surface-variant">精准的描述能帮助 AI 更好地理解您的创作意图</p>
+</div>
+<div class="relative group bg-surface-container-lowest rounded-lg p-6 shadow-[0_12px_40px_rgba(74,71,210,0.05)] h-64 flex flex-col border border-primary/5">
+<textarea class="w-full flex-1 bg-transparent border-none focus:ring-0 text-base resize-none placeholder:text-outline-variant font-body" placeholder="描述当前场景或动作，例如：林克站在繁华的赛博朋克街头，雨水打湿了他的肩膀..."></textarea>
+<div class="flex justify-between items-center pt-4 border-t border-surface-container">
+<div class="flex gap-2">
+<span class="px-2 py-1 bg-surface-container text-[10px] rounded-full font-bold uppercase tracking-wider text-on-surface-variant">0 / 500</span>
+</div>
+<button class="flex items-center gap-2 bg-primary-container text-on-primary-container px-4 py-2 rounded-full text-xs font-bold hover:brightness-95 transition-all group-hover:scale-105 active:scale-95">
+<span class="material-symbols-outlined text-sm" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+                                AI 智能扩写
+                            </button>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-lg p-6 border border-primary/10">
+<div class="flex items-center gap-2 mb-4 text-[#973773]">
+<span class="material-symbols-outlined text-sm" data-icon="lightbulb">lightbulb</span>
+<span class="text-xs font-bold">扩写建议</span>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+                            尝试加入光影描述，例如"霓虹灯闪烁的倒影"或"清晨的第一缕阳光"，这会让视频质感有显著提升。
+                        </p>
+</div>
+</div>
+<!-- Parameters Section -->
+<div class="flex flex-col gap-6">
+<h2 class="text-xl font-bold font-headline tracking-tight">视频参数</h2>
+<div class="bg-surface-container-lowest rounded-lg p-8 shadow-[0_12px_40px_rgba(74,71,210,0.05)] border border-primary/5 flex flex-col gap-8">
+<!-- Model Selection -->
+<div class="flex flex-col gap-4">
+<label class="text-sm font-bold text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]" data-icon="neurology">neurology</span>
+                                模型选择
+                            </label>
+<div class="grid grid-cols-2 gap-3">
+<div class="px-4 py-3 rounded-lg border-2 border-primary bg-primary/5 flex items-center justify-between cursor-pointer">
+<div class="flex flex-col">
+<span class="text-sm font-bold text-primary">Cinematic v3</span>
+<span class="text-[10px] text-primary/70">极致影调 &amp; 细节</span>
+</div>
+<span class="material-symbols-outlined text-primary text-xl" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="px-4 py-3 rounded-lg border border-outline-variant/30 hover:border-primary/50 flex items-center justify-between cursor-pointer transition-colors">
+<div class="flex flex-col">
+<span class="text-sm font-bold">Fast Motion</span>
+<span class="text-[10px] text-on-surface-variant">极速生成 &amp; 稳定</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Duration & Aspect Ratio -->
+<div class="grid grid-cols-2 gap-8">
+<div class="flex flex-col gap-4">
+<label class="text-sm font-bold text-on-surface-variant">视频时长 (Duration)</label>
+<div class="flex items-center gap-2 bg-surface-container-low rounded-full px-4 py-2">
+<span class="text-sm font-bold flex-1">5.0s</span>
+<input class="w-24 accent-primary" max="10" min="1" type="range" value="5"/>
+</div>
+</div>
+<div class="flex flex-col gap-4">
+<label class="text-sm font-bold text-on-surface-variant">纵横比 (Aspect Ratio)</label>
+<div class="flex gap-2">
+<button class="flex-1 py-2 rounded-lg bg-primary text-white text-xs font-bold">16:9</button>
+<button class="flex-1 py-2 rounded-lg bg-surface-container text-on-surface-variant text-xs font-bold hover:bg-surface-container-high transition-colors">9:16</button>
+<button class="flex-1 py-2 rounded-lg bg-surface-container text-on-surface-variant text-xs font-bold hover:bg-surface-container-high transition-colors">1:1</button>
+</div>
+</div>
+</div>
+<!-- Resolution -->
+<div class="flex flex-col gap-4">
+<label class="text-sm font-bold text-on-surface-variant">分辨率 (Resolution)</label>
+<div class="flex gap-4">
+<label class="flex-1 flex items-center gap-3 cursor-pointer group">
+<div class="w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center">
+<div class="w-2.5 h-2.5 bg-primary rounded-full"></div>
+</div>
+<span class="text-sm font-medium">1080P HD</span>
+</label>
+<label class="flex-1 flex items-center gap-3 cursor-pointer group">
+<div class="w-5 h-5 rounded-full border-2 border-outline-variant flex items-center justify-center group-hover:border-primary/50"></div>
+<span class="text-sm font-medium text-on-surface-variant">4K Ultra (Pro)</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Action Bar (BottomNavBar) -->
+<footer class="fixed bottom-8 w-full flex justify-center z-50">
+<div class="bg-[#ffffff]/80 backdrop-blur-2xl border border-[#5a5b60]/10 rounded-full px-6 py-3 w-fit min-w-[400px] shadow-[0_12px_40px_rgba(74,71,210,0.1)] flex justify-center gap-4">
+<button class="text-[#5a5b60] px-4 py-2 flex items-center gap-2 hover:bg-[#f0f0f6] transition-colors rounded-full font-manrope font-bold text-xs">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+                生成剧本
+            </button>
+<button class="text-[#5a5b60] px-4 py-2 flex items-center gap-2 hover:bg-[#f0f0f6] transition-colors rounded-full font-manrope font-bold text-xs">
+<span class="material-symbols-outlined" data-icon="magic_button">magic_button</span>
+                AI 优化
+            </button>
+<button class="bg-[#4a47d2] text-white rounded-full px-6 py-2 flex items-center gap-2 scale-105 active:scale-95 duration-300 font-manrope font-bold text-xs shadow-lg shadow-primary/30">
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+                生成视频
+            </button>
+</div>
+</footer>
+</body></html>

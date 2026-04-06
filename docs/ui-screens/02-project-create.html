@@ -1,0 +1,300 @@
+<!-- 短剧创作 - 项目创建 -->
+<!DOCTYPE html>
+
+<html class="light" lang="zh-Hans"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#f6f6fb",
+                    "on-error": "#ffefef",
+                    "surface-container": "#e7e8ee",
+                    "primary-fixed": "#9695ff",
+                    "outline": "#75777b",
+                    "on-secondary-container": "#00468e",
+                    "primary-dim": "#3d38c5",
+                    "surface-dim": "#d2d4db",
+                    "outline-variant": "#acadb1",
+                    "secondary-fixed": "#bcd2ff",
+                    "primary-container": "#9695ff",
+                    "error": "#b41340",
+                    "tertiary": "#973773",
+                    "surface-variant": "#dbdde3",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-fixed": "#000000",
+                    "on-tertiary-fixed-variant": "#6c104f",
+                    "on-surface-variant": "#5a5b60",
+                    "on-primary": "#f4f1ff",
+                    "inverse-surface": "#0c0e12",
+                    "primary": "#4a47d2",
+                    "on-secondary": "#eff2ff",
+                    "on-background": "#2d2f33",
+                    "tertiary-dim": "#882a67",
+                    "secondary-fixed-dim": "#a5c5ff",
+                    "secondary-container": "#bcd2ff",
+                    "tertiary-fixed-dim": "#ed7ebe",
+                    "error-container": "#f74b6d",
+                    "on-error-container": "#510017",
+                    "primary-fixed-dim": "#8686ff",
+                    "error-dim": "#a70138",
+                    "on-tertiary-fixed": "#350025",
+                    "background": "#f6f6fb",
+                    "tertiary-container": "#fd8bcc",
+                    "inverse-primary": "#8382ff",
+                    "inverse-on-surface": "#9c9da1",
+                    "on-primary-container": "#10007f",
+                    "secondary-dim": "#004e9d",
+                    "surface-bright": "#f6f6fb",
+                    "on-secondary-fixed": "#00336b",
+                    "surface-container-low": "#f0f0f6",
+                    "surface-container-highest": "#dbdde3",
+                    "surface-container-high": "#e1e2e8",
+                    "tertiary-fixed": "#fd8bcc",
+                    "on-secondary-fixed-variant": "#004f9f",
+                    "surface-tint": "#4a47d2",
+                    "on-tertiary-container": "#610246",
+                    "on-tertiary": "#ffeff4",
+                    "secondary": "#005ab2",
+                    "on-surface": "#2d2f33",
+                    "on-primary-fixed-variant": "#16009b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #f6f6fb;
+            font-family: 'Inter', sans-serif;
+        }
+        .bento-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .bento-card:hover {
+            transform: translateY(-4px);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface">
+<!-- TopNavBar Component -->
+<header class="fixed top-0 w-full z-50 bg-[#f6f6fb] dark:bg-slate-900 bg-opacity-80 backdrop-blur-xl">
+<div class="flex justify-between items-center h-16 px-8 w-full">
+<div class="text-xl font-bold tracking-tight text-[#4a47d2] dark:text-[#5e5ce6] font-headline">AutoVid</div>
+<nav class="hidden md:flex gap-8 items-center h-full">
+<a class="font-manrope text-sm font-medium text-[#4a47d2] dark:text-[#5e5ce6] border-b-2 border-[#4a47d2] pb-1" href="#">短剧创作</a>
+<a class="font-manrope text-sm font-medium text-[#5a5b60] dark:text-slate-400 hover:text-[#4a47d2] transition-colors" href="#">视频生成</a>
+<a class="font-manrope text-sm font-medium text-[#5a5b60] dark:text-slate-400 hover:text-[#4a47d2] transition-colors" href="#">我的项目</a>
+<a class="font-manrope text-sm font-medium text-[#5a5b60] dark:text-slate-400 hover:text-[#4a47d2] transition-colors" href="#">角色库</a>
+<a class="font-manrope text-sm font-medium text-[#5a5b60] dark:text-slate-400 hover:text-[#4a47d2] transition-colors" href="#">模板中心</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container overflow-hidden">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="professional portrait of a creative designer with a minimalist background and soft cinematic lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzsEcvnybL66gBXQzAoRNdBToLSzi8hKrsQkB2Lk4U0ypWFnnAvAyqBvDkETWroukOBg6yd50_5RQW-6qiAU0Jw-cTbrh2A6x759i0saZ7CLMPbtBFb3CI2CwHHadDt1kqSxkxXUi04lUM5g3ufLcEX-Vr-SH9to80pRFil8zOz19tNSyQycAsd0X3-iiIwiTk08_H87r7f1ro_hALEa7XBgbXR0WhUU4ZTKJY0TJCZ3Ni3gV-BNTDMEklCeD_iVI7JEKjixZURGk"/>
+</div>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-4 md:px-8 max-w-7xl mx-auto">
+<!-- Hero Title Section -->
+<div class="mb-12">
+<h1 class="font-headline font-extrabold text-4xl text-on-surface tracking-tight mb-2">新建短剧项目</h1>
+<p class="text-on-surface-variant text-lg">开启您的 AI 驱动创意旅程，一键生成高质量短剧剧本与视频。</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left: Main Form Content -->
+<div class="lg:col-span-8 space-y-8">
+<!-- Primary Form Section -->
+<div class="bg-surface-container-lowest p-8 rounded-lg shadow-sm">
+<div class="space-y-6">
+<!-- Project Name -->
+<div class="space-y-2">
+<label class="text-sm font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">edit_note</span>
+                                项目名称
+                            </label>
+<input class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-on-surface placeholder-on-surface-variant/50 p-4 transition-all" placeholder="输入您的项目名称，如：AI之城的秘密" type="text"/>
+</div>
+<!-- Creative Description -->
+<div class="space-y-2">
+<label class="text-sm font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">description</span>
+                                创作描述
+                            </label>
+<textarea class="w-full bg-surface-container-low border-none rounded-lg focus:ring-2 focus:ring-primary/20 text-on-surface placeholder-on-surface-variant/50 p-4 resize-none transition-all" placeholder="描述您想要创作的故事情节、核心冲突或主要场景... AI 将根据您的描述自动扩展剧情。" rows="6"></textarea>
+</div>
+</div>
+</div>
+<!-- Parameter Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Genre Selection -->
+<div class="bg-surface-container-low p-6 rounded-lg space-y-4">
+<label class="text-sm font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">theater_comedy</span>
+                            类型
+                        </label>
+<select class="w-full bg-surface-container-lowest border-none rounded-full px-4 py-2 text-sm text-on-surface-variant focus:ring-2 focus:ring-primary/20">
+<option>都市言情</option>
+<option>悬疑惊悚</option>
+<option>古代宫廷</option>
+<option>科幻未来</option>
+<option>职场励志</option>
+</select>
+</div>
+<!-- Style Selection -->
+<div class="bg-surface-container-low p-6 rounded-lg space-y-4">
+<label class="text-sm font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">palette</span>
+                            风格
+                        </label>
+<select class="w-full bg-surface-container-lowest border-none rounded-full px-4 py-2 text-sm text-on-surface-variant focus:ring-2 focus:ring-primary/20">
+<option>电影质感</option>
+<option>动漫渲染</option>
+<option>复古胶片</option>
+<option>极简主义</option>
+<option>赛博朋克</option>
+</select>
+</div>
+<!-- Platform Selection -->
+<div class="bg-surface-container-low p-6 rounded-lg space-y-4">
+<label class="text-sm font-bold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">ios_share</span>
+                            目标平台
+                        </label>
+<select class="w-full bg-surface-container-lowest border-none rounded-full px-4 py-2 text-sm text-on-surface-variant focus:ring-2 focus:ring-primary/20">
+<option>抖音 (9:16)</option>
+<option>快手 (9:16)</option>
+<option>Bilibili (16:9)</option>
+<option>YouTube Shorts</option>
+</select>
+</div>
+</div>
+<!-- Advanced Options Section -->
+<div class="bg-surface-container-low rounded-lg overflow-hidden">
+<button class="w-full p-6 flex justify-between items-center text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="flex items-center gap-3 font-semibold">
+<span class="material-symbols-outlined text-primary">tune</span>
+                            高级配置选项 (Advanced Options)
+                        </span>
+<span class="material-symbols-outlined">expand_more</span>
+</button>
+<div class="p-8 pt-0 space-y-8">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Custom Prompt -->
+<div class="space-y-3">
+<label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">自定义 Prompt</label>
+<textarea class="w-full bg-surface-container-lowest border-none rounded-lg text-sm p-4" placeholder="输入特定的AI指令，精细化控制生成方向..." rows="3"></textarea>
+</div>
+<!-- Character Settings -->
+<div class="space-y-3">
+<label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">角色设定</label>
+<div class="flex gap-2">
+<button class="bg-surface-container-lowest p-2 rounded-lg border border-primary/10 flex items-center gap-2 text-xs font-medium">
+<span class="material-symbols-outlined text-sm">person_add</span>
+                                        添加主角
+                                    </button>
+<button class="bg-surface-container-lowest p-2 rounded-lg border border-primary/10 flex items-center gap-2 text-xs font-medium">
+<span class="material-symbols-outlined text-sm">group_add</span>
+                                        从角色库导入
+                                    </button>
+</div>
+</div>
+</div>
+<!-- File Upload -->
+<div class="border-2 border-dashed border-outline-variant/30 rounded-lg p-10 flex flex-col items-center justify-center bg-surface-container-lowest/50 hover:bg-surface-container-lowest transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-4xl text-primary mb-2">cloud_upload</span>
+<p class="text-sm font-medium text-on-surface">点击或拖拽上传参考文件</p>
+<p class="text-xs text-on-surface-variant mt-1">支持 PDF, Word, 或图片参考图 (最大 20MB)</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Project Summary / Preview Card -->
+<div class="lg:col-span-4 space-y-6">
+<div class="bg-primary p-8 rounded-lg text-on-primary sticky top-24 shadow-lg shadow-primary/20">
+<h3 class="font-headline font-bold text-xl mb-6">项目预览摘要</h3>
+<ul class="space-y-4 mb-8">
+<li class="flex justify-between items-center pb-4 border-b border-on-primary/10">
+<span class="opacity-70 text-sm">时长预估</span>
+<span class="font-bold">约 90s</span>
+</li>
+<li class="flex justify-between items-center pb-4 border-b border-on-primary/10">
+<span class="opacity-70 text-sm">角色预设</span>
+<span class="font-bold">2 位</span>
+</li>
+<li class="flex justify-between items-center pb-4 border-b border-on-primary/10">
+<span class="opacity-70 text-sm">场景深度</span>
+<span class="font-bold">中等</span>
+</li>
+<li class="flex justify-between items-center">
+<span class="opacity-70 text-sm">生成强度</span>
+<span class="font-bold">标准模式</span>
+</li>
+</ul>
+<div class="aspect-video rounded-lg bg-black/20 overflow-hidden mb-8 relative group">
+<img class="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" data-alt="abstract cinematic background with bokeh neon lights and soft violet hues reflecting on water" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBbJRNLyeQ9cvT_18UCjFDJYpkwNaWZNADXZ-w1H00rGJUBfxVIw4G1QS1Bjt48_xcbS2viDxyz_y2aW3XCSg3kRfqC2XoBINYvlW7k8vLVufxjyYhGDg6vS6dvnH2VVncYQg8eAoxv0SBmuTNKQHQrkvdJU_CXw_xM0mP8sY_r6VB-NJLZV7Xva5BfyiN42x-cW-wvQLFZONLKmLjUIOifTei4q3dPr8kv54ypuOjmtwkCD9QWKNJ6BDseOgrC_kRrtizJsn2ehwg"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-5xl opacity-40">movie_filter</span>
+</div>
+</div>
+<button class="w-full bg-white text-primary font-bold py-4 rounded-full flex items-center justify-center gap-2 hover:bg-on-primary transition-all active:scale-95">
+                        创建项目
+                        <span class="material-symbols-outlined">rocket_launch</span>
+</button>
+<p class="text-[10px] text-center mt-4 opacity-60">点击创建即代表您同意 AutoVid 服务条款</p>
+</div>
+<!-- Tips / AI Assistant -->
+<div class="bg-tertiary-container/10 p-6 rounded-lg border border-tertiary/10">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">lightbulb</span>
+<div>
+<h4 class="text-sm font-bold text-on-tertiary-container mb-1">AI 创作贴士</h4>
+<p class="text-xs text-on-surface-variant leading-relaxed">提供具体的视觉描述（如"雨夜下的霓虹灯"）能显著提升 AI 生成视频的画面表现力。</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar Component - Contextual for Project Journey -->
+<nav class="fixed bottom-8 w-full flex justify-center z-50 md:hidden">
+<div class="bg-[#ffffff]/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-[#5a5b60]/10 rounded-full px-6 py-3 w-fit min-w-[320px] shadow-[0_12px_40px_rgba(74,71,210,0.1)] flex justify-around items-center gap-4">
+<div class="text-[#5a5b60] px-4 py-2 flex items-center gap-2 font-manrope font-bold text-xs">
+<span class="material-symbols-outlined">auto_awesome</span>
+                生成剧本
+            </div>
+<div class="text-[#5a5b60] px-4 py-2 flex items-center gap-2 font-manrope font-bold text-xs">
+<span class="material-symbols-outlined">magic_button</span>
+                AI 优化
+            </div>
+<div class="bg-[#4a47d2] text-white rounded-full px-6 py-2 flex items-center gap-2 font-manrope font-bold text-xs">
+<span class="material-symbols-outlined">arrow_forward</span>
+                下一步
+            </div>
+</div>
+</nav>
+</body></html>
