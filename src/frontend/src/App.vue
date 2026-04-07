@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-surface">
-    <TopNavBar />
+    <TopNavigation />
     <main class="pt-16">
       <router-view />
     </main>
@@ -12,12 +12,13 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import TopNavBar from '@/components/TopNavBar.vue'
+import TopNavigation from '@/components/TopNavigation.vue'
 import BottomNavBar from '@/components/BottomNavBar.vue'
 
 const route = useRoute()
 
 const showBottomNav = computed(() => {
-  const hiddenRoutes = ['settings', 'model-config']
-  return !hiddenRoutes.some(r => route.name?.includes(r))
+  const hiddenRoutes = ['/', '/settings', '/characters', '/projects']
+  return !hiddenRoutes.some(r => route.path.startsWith(r))
 })
 </script>
