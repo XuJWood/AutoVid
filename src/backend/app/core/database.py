@@ -166,6 +166,34 @@ class GeneratedVideo(Base):
     completed_at = Column(DateTime, nullable=True)
 
 
+class Storyboard(Base):
+    """Storyboard model for shot-by-shot editing"""
+    __tablename__ = "storyboards"
+
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    scene_index = Column(Integer, default=0)
+    shot_index = Column(Integer, default=0)
+
+    # Shot data
+    shot_type = Column(String(50))  # 远景/全景/中景/近景/特写
+    description = Column(Text)
+    image_prompt = Column(Text)  # AI生图提示词
+    video_prompt = Column(Text)  # AI生视频提示词
+    duration = Column(Integer, default=5)
+
+    # Generated resources
+    image_url = Column(String(500))
+    video_url = Column(String(500))
+    audio_url = Column(String(500))
+
+    # Status
+    status = Column(String(50), default="pending")  # pending/processing/completed/failed
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 async def get_db() -> AsyncSession:
     """Dependency for getting database session"""
     async with async_session_maker() as session:

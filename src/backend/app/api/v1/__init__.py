@@ -3,7 +3,7 @@ API v1 router
 """
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import model_config, prompt_template, projects, characters, videos, pipeline
+from app.api.v1.endpoints import model_config, prompt_template, projects, characters, videos, pipeline, storyboard
 
 api_router = APIRouter()
 
