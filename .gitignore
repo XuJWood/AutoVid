@@ -93,3 +93,9 @@ vendor/
 coverage/
 .cache/
 tmp/
+
+# Local docs and plans (keep local, don't push)
+PLAN.md
+TEAM.md
+docs/superpowers/
+.bg-shell/
