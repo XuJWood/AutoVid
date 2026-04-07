@@ -253,7 +253,7 @@ def get_voice_service(provider: str, api_key: str, **kwargs) -> BaseAIService:
         "eleven": ElevenLabsService,
         "azure": AzureTTSService,
         "openai": OpenAITTSService,
-        "tts": OpenAITSService
+        "tts": OpenAITTSService
     }
 
     service_class = services.get(provider.lower())

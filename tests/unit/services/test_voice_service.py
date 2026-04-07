@@ -32,11 +32,13 @@ class TestVoiceService:
 
     def test_get_voice_service_cosyvoice(self):
         """测试获取CosyVoice服务"""
-        service = get_voice_service(
-            provider="cosyvoice",
-            api_key="test-key"
-        )
-        assert service is not None
+        with patch("app.services.alibaba_cloud.CosyVoiceService") as mock:
+            mock.return_value = MagicMock()
+            service = get_voice_service(
+                provider="cosyvoice",
+                api_key="test-key"
+            )
+            assert service is not None
 
 
 class TestVoiceServiceSynthesize:
