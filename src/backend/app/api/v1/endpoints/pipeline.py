@@ -132,11 +132,12 @@ async def start_pipeline_stream(
 
         try:
             # 手动报告进度
-            yield f"data: {json.dumps({
+            initial_data = json.dumps({
                 'stage': 'script',
                 'progress': 0.0,
                 'message': '正在生成剧本...'
-            }, ensure_ascii=False)}\n\n"
+            }, ensure_ascii=False)
+            yield f"data: {initial_data}\n\n"
 
             result = await pipeline.generate_short_drama(
                 project_id=request.project_id,
@@ -146,26 +147,29 @@ async def start_pipeline_stream(
 
             # 发送收集到的进度
             for p in progress_queue:
-                yield f"data: {json.dumps({
+                progress_data = json.dumps({
                     'stage': p.stage.value,
                     'progress': p.progress,
                     'message': p.message,
                     'data': p.data
-                }, ensure_ascii=False)}\n\n"
+                }, ensure_ascii=False)
+                yield f"data: {progress_data}\n\n"
 
-            yield f"data: {json.dumps({
+            completed_data = json.dumps({
                 'stage': 'completed',
                 'progress': 1.0,
                 'message': '生成完成',
                 'result': result
-            }, ensure_ascii=False)}\n\n"
+            }, ensure_ascii=False)
+            yield f"data: {completed_data}\n\n"
 
         except Exception as e:
-            yield f"data: {json.dumps({
+            error_data = json.dumps({
                 'stage': 'failed',
                 'progress': 0.0,
                 'message': str(e)
-            }, ensure_ascii=False)}\n\n"
+            }, ensure_ascii=False)
+            yield f"data: {error_data}\n\n"
 
     return StreamingResponse(
         generate_stream(),
