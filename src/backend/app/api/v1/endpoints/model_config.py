@@ -90,6 +90,21 @@ async def get_model_config_by_name(config_name: str, db: AsyncSession = Depends(
     return config
 
 
+@router.get("/{config_name}/active", response_model=ModelConfigResponse)
+async def get_active_config_by_name(config_name: str, db: AsyncSession = Depends(get_db)):
+    """Get active model configuration by name"""
+    result = await db.execute(
+        select(ModelConfig).where(
+            ModelConfig.name == config_name,
+            ModelConfig.is_active == True
+        )
+    )
+    config = result.scalar_one_or_none()
+    if not config:
+        raise HTTPException(status_code=404, detail="No active config found for this name")
+    return config
+
+
 @router.post("", response_model=ModelConfigResponse)
 async def create_model_config(config: ModelConfigCreate, db: AsyncSession = Depends(get_db)):
     """Create a new model configuration"""

@@ -45,12 +45,16 @@ class TestVoiceServiceSynthesize:
     @pytest.mark.asyncio
     async def test_openai_synthesize_success(self):
         """测试OpenAI TTS合成成功"""
-        with patch("app.services.voice_service.AsyncOpenAI") as mock_openai:
-            mock_client = MagicMock()
+        with patch("app.services.voice_service.httpx.AsyncClient") as mock_client:
             mock_response = MagicMock()
+            mock_response.status_code = 200
             mock_response.content = b"fake_audio_data"
-            mock_client.audio.speech.create = AsyncMock(return_value=mock_response)
-            mock_openai.return_value = mock_client
+
+            mock_async_client = MagicMock()
+            mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
+            mock_async_client.__aexit__ = AsyncMock(return_value=None)
+            mock_async_client.post = AsyncMock(return_value=mock_response)
+            mock_client.return_value = mock_async_client
 
             service = get_voice_service(
                 provider="openai",
@@ -62,17 +66,19 @@ class TestVoiceServiceSynthesize:
             )
 
             assert result.success is True
-            assert result.data is not None
+            assert result.audio_data is not None
 
     @pytest.mark.asyncio
     async def test_voice_synthesize_with_error(self):
         """测试语音合成失败"""
-        with patch("app.services.voice_service.AsyncOpenAI") as mock_openai:
-            mock_client = MagicMock()
-            mock_client.audio.speech.create = AsyncMock(
+        with patch("app.services.voice_service.httpx.AsyncClient") as mock_client:
+            mock_async_client = MagicMock()
+            mock_async_client.__aenter__ = AsyncMock(return_value=mock_async_client)
+            mock_async_client.__aexit__ = AsyncMock(return_value=None)
+            mock_async_client.post = AsyncMock(
                 side_effect=Exception("API Error")
             )
-            mock_openai.return_value = mock_client
+            mock_client.return_value = mock_async_client
 
             service = get_voice_service(
                 provider="openai",

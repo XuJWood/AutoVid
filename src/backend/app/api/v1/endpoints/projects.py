@@ -1,6 +1,7 @@
 """
 Projects API endpoints
 """
+from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,7 @@ import asyncio
 from app.core.database import get_db, Project, Character, ModelConfig
 from app.services.llm_service import get_llm_service
 from app.services.prompts import get_script_prompt
+from app.api.v1.endpoints.characters import CharacterResponse
 
 router = APIRouter()
 
@@ -333,14 +335,10 @@ def get_mock_script(project: Project) -> Dict[str, Any]:
     }
 
 
-@router.get("/{project_id}/characters", response_model=List["CharacterResponse"])
+@router.get("/{project_id}/characters", response_model=List[CharacterResponse])
 async def get_project_characters(project_id: int, db: AsyncSession = Depends(get_db)):
     """Get all characters in a project"""
     result = await db.execute(
         select(Character).where(Character.project_id == project_id)
     )
     return result.scalars().all()
-
-
-# Import CharacterResponse from characters module
-from .characters import CharacterResponse

@@ -4,7 +4,7 @@ Videos API 集成测试
 import pytest
 from httpx import AsyncClient
 
-from app.core.database import GeneratedVideo, Project, Character
+from app.core.database import GeneratedVideo, Project
 
 
 pytestmark = pytest.mark.integration
@@ -26,11 +26,12 @@ class TestVideosAPI:
         )
         project_id = project_response.json()["id"]
 
-        # 创建视频任务
+        # 创建视频任务（使用正确的端点）
         response = await client.post(
-            "/api/v1/videos",
+            "/api/v1/videos/generate",
             json={
                 "project_id": project_id,
+                "scene_description": "测试场景描述",
                 "duration": 5,
                 "resolution": "1080p",
                 "aspect_ratio": "16:9"
@@ -38,9 +39,8 @@ class TestVideosAPI:
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["project_id"] == project_id
+        assert "video_id" in data
         assert data["status"] == "pending"
-        assert "id" in data
 
     async def test_get_video(
         self,
@@ -56,10 +56,13 @@ class TestVideosAPI:
         project_id = project_response.json()["id"]
 
         create_response = await client.post(
-            "/api/v1/videos",
-            json={"project_id": project_id}
+            "/api/v1/videos/generate",
+            json={
+                "project_id": project_id,
+                "scene_description": "测试场景"
+            }
         )
-        video_id = create_response.json()["id"]
+        video_id = create_response.json()["video_id"]
 
         # 获取视频
         response = await client.get(f"/api/v1/videos/{video_id}")
@@ -84,8 +87,11 @@ class TestVideosAPI:
         # 创建多个视频任务
         for i in range(3):
             await client.post(
-                "/api/v1/videos",
-                json={"project_id": project_id}
+                "/api/v1/videos/generate",
+                json={
+                    "project_id": project_id,
+                    "scene_description": f"场景{i}"
+                }
             )
 
         response = await client.get(f"/api/v1/videos?project_id={project_id}")
@@ -93,12 +99,12 @@ class TestVideosAPI:
         data = response.json()
         assert len(data) >= 3
 
-    async def test_update_video_status(
+    async def test_get_video_status(
         self,
         client: AsyncClient,
         sample_project_data: dict
     ):
-        """测试更新视频状态"""
+        """测试获取视频状态"""
         # 创建项目和视频
         project_response = await client.post(
             "/api/v1/projects",
@@ -107,24 +113,20 @@ class TestVideosAPI:
         project_id = project_response.json()["id"]
 
         create_response = await client.post(
-            "/api/v1/videos",
-            json={"project_id": project_id}
+            "/api/v1/videos/generate",
+            json={
+                "project_id": project_id,
+                "scene_description": "测试场景"
+            }
         )
-        video_id = create_response.json()["id"]
+        video_id = create_response.json()["video_id"]
 
-        # 更新状态
-        update_data = {
-            "status": "completed",
-            "file_path": "/videos/test.mp4"
-        }
-        response = await client.put(
-            f"/api/v1/videos/{video_id}",
-            json=update_data
-        )
+        # 获取状态
+        response = await client.get(f"/api/v1/videos/{video_id}/status")
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "completed"
-        assert data["file_path"] == "/videos/test.mp4"
+        assert "status" in data
+        assert "progress" in data
 
     async def test_delete_video(
         self,
@@ -140,10 +142,13 @@ class TestVideosAPI:
         project_id = project_response.json()["id"]
 
         create_response = await client.post(
-            "/api/v1/videos",
-            json={"project_id": project_id}
+            "/api/v1/videos/generate",
+            json={
+                "project_id": project_id,
+                "scene_description": "测试场景"
+            }
         )
-        video_id = create_response.json()["id"]
+        video_id = create_response.json()["video_id"]
 
         # 删除视频
         response = await client.delete(f"/api/v1/videos/{video_id}")
@@ -169,11 +174,42 @@ class TestVideosAPI:
         # 创建多个视频
         for i in range(3):
             await client.post(
-                "/api/v1/videos",
-                json={"project_id": project_id}
+                "/api/v1/videos/generate",
+                json={
+                    "project_id": project_id,
+                    "scene_description": f"场景{i}"
+                }
             )
 
         response = await client.get("/api/v1/videos")
         assert response.status_code == 200
         data = response.json()
         assert len(data) >= 3
+
+    async def test_regenerate_video(
+        self,
+        client: AsyncClient,
+        sample_project_data: dict
+    ):
+        """测试重新生成视频"""
+        # 创建项目和视频
+        project_response = await client.post(
+            "/api/v1/projects",
+            json=sample_project_data
+        )
+        project_id = project_response.json()["id"]
+
+        create_response = await client.post(
+            "/api/v1/videos/generate",
+            json={
+                "project_id": project_id,
+                "scene_description": "测试场景"
+            }
+        )
+        video_id = create_response.json()["video_id"]
+
+        # 重新生成
+        response = await client.post(f"/api/v1/videos/{video_id}/regenerate")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "pending"

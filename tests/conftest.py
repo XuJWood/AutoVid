@@ -170,5 +170,6 @@ def sample_prompt_template_data():
         "type": "script",
         "template": "生成一个关于{topic}的{style}风格剧本",
         "variables": ["topic", "style"],
-        "is_default": True
+        "is_default": True,
+        "is_system": False
     }

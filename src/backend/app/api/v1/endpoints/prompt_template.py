@@ -221,7 +221,10 @@ async def create_prompt_template(template: PromptTemplateCreate, db: AsyncSessio
     variables = re.findall(r'\{(\w+)\}', template.template)
 
     db_template = PromptTemplate(
-        **template.model_dump(),
+        name=template.name,
+        type=template.type,
+        template=template.template,
+        is_default=template.is_default or False,
         variables=variables,
         is_system=False
     )
