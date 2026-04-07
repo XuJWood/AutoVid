@@ -250,6 +250,35 @@ async def generate_script(
         project.status = "in_progress"
         await db.commit()
 
+        # 自动创建角色记录
+        if script_content.get("characters"):
+            for char_data in script_content["characters"]:
+                appearance = char_data.get("appearance", {})
+                if isinstance(appearance, dict):
+                    appearance_str = appearance.get("face", "")
+                else:
+                    appearance_str = str(appearance)
+
+                clothing = char_data.get("clothing", {})
+                if isinstance(clothing, dict):
+                    clothing_str = clothing.get("style", "")
+                else:
+                    clothing_str = str(clothing)
+
+                character = Character(
+                    project_id=project_id,
+                    name=char_data.get("name", "未命名角色"),
+                    age=char_data.get("age"),
+                    gender=char_data.get("gender"),
+                    occupation=char_data.get("occupation"),
+                    personality=char_data.get("personality"),
+                    appearance=appearance_str,
+                    clothing=clothing_str,
+                    style="realistic"
+                )
+                db.add(character)
+            await db.commit()
+
         # 返回最终结果
         yield f"data: {json.dumps({'status': 'completed', 'message': message, 'progress': 100, 'script': script_content}, ensure_ascii=False)}\n\n"
 
