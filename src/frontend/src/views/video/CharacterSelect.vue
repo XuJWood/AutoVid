@@ -45,7 +45,7 @@
           :key="character.id"
           @click="selectedCharacter = character"
           :class="[
-            'bg-surface-container-lowest rounded-lg overflow-hidden cursor-pointer transition-all',
+            'relative bg-surface-container-lowest rounded-lg overflow-hidden cursor-pointer transition-all',
             selectedCharacter?.id === character.id
               ? 'ring-2 ring-primary ring-offset-2'
               : 'hover:shadow-lg hover:-translate-y-1'
@@ -84,7 +84,7 @@
     <!-- Actions -->
     <div class="flex justify-end">
       <router-link
-        :to="selectedCharacter ? '/video/scene' : '#'"
+        :to="selectedCharacter ? `/video/scene?character_id=${selectedCharacter.id}` : '#'"
         :class="[
           'px-8 py-3 rounded-full font-bold text-sm flex items-center gap-2 transition-all',
           selectedCharacter

@@ -176,11 +176,13 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { videosApi } from '@/api/videos'
+import { charactersApi } from '@/api/characters'
 
 const router = useRouter()
+const route = useRoute()
 
 const selectedCharacter = ref(null)
 const sceneDescription = ref('')
@@ -201,6 +203,18 @@ const resolutions = [
   { label: '4K Ultra', value: '4k' }
 ]
 
+const loadCharacter = async () => {
+  const characterId = route.query.character_id
+  if (characterId) {
+    try {
+      const response = await charactersApi.get(characterId)
+      selectedCharacter.value = response.data
+    } catch (error) {
+      console.error('Failed to load character:', error)
+    }
+  }
+}
+
 const generateVideo = async () => {
   try {
     const response = await videosApi.generate({
@@ -216,4 +230,6 @@ const generateVideo = async () => {
     console.error('Failed to generate video:', error)
   }
 }
+
+onMounted(loadCharacter)
 </script>

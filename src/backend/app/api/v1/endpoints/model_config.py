@@ -80,6 +80,16 @@ async def get_model_config(config_id: int, db: AsyncSession = Depends(get_db)):
     return config
 
 
+@router.get("/by-name/{config_name}", response_model=ModelConfigResponse)
+async def get_model_config_by_name(config_name: str, db: AsyncSession = Depends(get_db)):
+    """Get a specific model configuration by name"""
+    result = await db.execute(select(ModelConfig).where(ModelConfig.name == config_name))
+    config = result.scalar_one_or_none()
+    if not config:
+        raise HTTPException(status_code=404, detail="Model config not found")
+    return config
+
+
 @router.post("", response_model=ModelConfigResponse)
 async def create_model_config(config: ModelConfigCreate, db: AsyncSession = Depends(get_db)):
     """Create a new model configuration"""
