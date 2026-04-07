@@ -71,6 +71,14 @@
               <span class="material-symbols-outlined text-sm">auto_awesome</span>
               {{ generating ? '生成中...' : '生成剧本' }}
             </button>
+            <router-link
+              v-if="scriptContent?.scenes"
+              :to="`/drama/${projectId}/storyboard`"
+              class="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-full text-xs font-bold hover:brightness-95 transition-all"
+            >
+              <span class="material-symbols-outlined text-sm">movie</span>
+              进入分镜
+            </router-link>
           </div>
         </div>
 

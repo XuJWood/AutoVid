@@ -13,3 +13,4 @@ api_router.include_router(projects.router, prefix="/projects", tags=["Projects"]
 api_router.include_router(characters.router, prefix="/characters", tags=["Characters"])
 api_router.include_router(videos.router, prefix="/videos", tags=["Videos"])
 api_router.include_router(pipeline.router, prefix="/pipeline", tags=["Pipeline"])
+api_router.include_router(storyboard.router, prefix="/storyboard", tags=["Storyboard"])

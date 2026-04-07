@@ -99,7 +99,7 @@ def mock_image_service():
     with patch("app.services.image_service.get_image_service") as mock:
         mock.return_value.generate = AsyncMock(return_value=GenerationResult(
             success=True,
-            data="https://example.com/mock-image.png",
+            data={"images": ["https://example.com/mock-image.png"]},
             content=None,
             error=None
         ))
@@ -113,6 +113,47 @@ def mock_voice_service():
         mock.return_value.synthesize = AsyncMock(return_value=GenerationResult(
             success=True,
             data="https://example.com/mock-audio.mp3",
+            content=None,
+            error=None
+        ))
+        yield mock
+
+
+@pytest.fixture
+def mock_video_service():
+    """Mock视频生成服务"""
+    with patch("app.services.video_service.get_video_service") as mock:
+        mock.return_value.generate = AsyncMock(return_value=GenerationResult(
+            success=True,
+            data={"video_url": "https://example.com/mock-video.mp4"},
+            content=None,
+            error=None
+        ))
+        yield mock
+
+
+# Storyboard specific mocks (patch at endpoint level)
+
+@pytest.fixture
+def mock_storyboard_image_service():
+    """Mock图像生成服务 (storyboard endpoint)"""
+    with patch("app.api.v1.endpoints.storyboard.get_image_service") as mock:
+        mock.return_value.generate = AsyncMock(return_value=GenerationResult(
+            success=True,
+            data={"images": ["https://example.com/mock-image.png"]},
+            content=None,
+            error=None
+        ))
+        yield mock
+
+
+@pytest.fixture
+def mock_storyboard_video_service():
+    """Mock视频生成服务 (storyboard endpoint)"""
+    with patch("app.api.v1.endpoints.storyboard.get_video_service") as mock:
+        mock.return_value.generate = AsyncMock(return_value=GenerationResult(
+            success=True,
+            data={"video_url": "https://example.com/mock-video.mp4"},
             content=None,
             error=None
         ))
