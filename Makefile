@@ -36,7 +36,16 @@ docker-down:
 	docker-compose down
 
 test:
-	cd src/backend && pytest
+	pytest tests/ -v
+
+test-cov:
+	pytest tests/ --cov=src/backend --cov-report=html
+
+test-unit:
+	pytest tests/unit/ -v -m unit
+
+test-integration:
+	pytest tests/integration/ -v -m integration
 
 # Database
 db-init:
