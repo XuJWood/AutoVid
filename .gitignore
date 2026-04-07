@@ -78,3 +78,17 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 CLAUDE.md
+
+# ── GSD baseline (auto-generated) ──
+.gsd
+.gsd-id
+*.code-workspace
+.env.*
+!.env.example
+.next/
+*.pyc
+target/
+vendor/
+coverage/
+.cache/
+tmp/
