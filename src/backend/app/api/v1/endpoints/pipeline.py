@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any
 import json
 import asyncio
 
-from app.core.database import get_db
+from app.core.database import get_db, async_session_maker
 from app.services.pipeline import VideoPipeline, PipelineProgress
 
 
@@ -42,7 +42,6 @@ _pipeline_status: Dict[int, Dict[str, Any]] = {}
 async def start_pipeline(
     request: PipelineStartRequest,
     background_tasks: BackgroundTasks,
-    db: AsyncSession = Depends(get_db)
 ):
     """启动一键生成流水线"""
     # 初始化状态
@@ -52,39 +51,40 @@ async def start_pipeline(
         "message": "流水线启动中..."
     }
 
-    # 后台运行流水线
+    # 后台运行流水线 — 创建独立的DB session
     async def run_pipeline():
-        pipeline = VideoPipeline(db)
+        async with async_session_maker() as db:
+            pipeline = VideoPipeline(db)
 
-        async def update_status(progress: PipelineProgress):
-            _pipeline_status[request.project_id] = {
-                "status": "running",
-                "progress": progress.progress,
-                "message": progress.message,
-                "stage": progress.stage.value,
-                "data": progress.data
-            }
+            async def update_status(progress: PipelineProgress):
+                _pipeline_status[request.project_id] = {
+                    "status": "running",
+                    "progress": progress.progress,
+                    "message": progress.message,
+                    "stage": progress.stage.value,
+                    "data": progress.data
+                }
 
-        pipeline.on_progress(update_status)
+            pipeline.on_progress(update_status)
 
-        try:
-            result = await pipeline.generate_short_drama(
-                project_id=request.project_id,
-                user_input=request.user_input,
-                options=request.options
-            )
-            _pipeline_status[request.project_id] = {
-                "status": "completed",
-                "progress": 1.0,
-                "message": "生成完成",
-                "result": result
-            }
-        except Exception as e:
-            _pipeline_status[request.project_id] = {
-                "status": "failed",
-                "progress": 0.0,
-                "message": str(e)
-            }
+            try:
+                result = await pipeline.generate_short_drama(
+                    project_id=request.project_id,
+                    user_input=request.user_input,
+                    options=request.options
+                )
+                _pipeline_status[request.project_id] = {
+                    "status": "completed",
+                    "progress": 1.0,
+                    "message": "生成完成",
+                    "result": result
+                }
+            except Exception as e:
+                _pipeline_status[request.project_id] = {
+                    "status": "failed",
+                    "progress": 0.0,
+                    "message": str(e)
+                }
 
     background_tasks.add_task(run_pipeline)
 

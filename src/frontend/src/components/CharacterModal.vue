@@ -52,6 +52,17 @@
           ></textarea>
         </div>
 
+        <!-- Error Display -->
+        <div v-if="generationError" class="mb-4 bg-red-50 text-red-700 rounded-lg p-3 text-sm">
+          {{ generationError }}
+        </div>
+
+        <!-- Loading State -->
+        <div v-if="generating || generatingThreeViews" class="mb-6 text-center py-8">
+          <span class="material-symbols-outlined text-3xl text-primary animate-spin mb-2">autorenew</span>
+          <p class="text-sm text-on-surface-variant">{{ generating ? '正在生成形象...' : '正在生成三视图...' }}</p>
+        </div>
+
         <!-- Generated Images -->
         <div v-if="generatedImages && Object.keys(generatedImages).length > 0">
           <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-3 block">生成结果</label>
@@ -72,17 +83,62 @@
             </div>
           </div>
         </div>
+
+        <!-- Three Views -->
+        <div v-if="threeViews" class="mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant block">三视图</label>
+            <span class="text-xs text-on-surface-variant">(正面/侧面/背面)</span>
+          </div>
+          <div class="flex gap-2 mb-4">
+            <button
+              v-for="vt in viewTypes"
+              :key="vt.key"
+              @click="activeView = vt.key"
+              :class="[
+                'px-4 py-2 rounded-full text-xs font-bold transition-colors',
+                activeView === vt.key
+                  ? 'bg-primary text-white'
+                  : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
+              ]"
+            >
+              {{ vt.label }}
+            </button>
+          </div>
+          <div class="aspect-[3/4] bg-surface-container-low rounded-lg overflow-hidden">
+            <img
+              v-if="threeViews.views?.[activeView]"
+              :src="threeViews.views[activeView]"
+              class="w-full h-full object-cover"
+            />
+            <div v-else class="w-full h-full flex items-center justify-center text-on-surface-variant text-sm">
+              暂无 {{ activeView === 'front' ? '正面' : activeView === 'side' ? '侧面' : '背面' }} 视图
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Footer -->
       <div class="p-6 border-t border-surface-container flex justify-between">
-        <button
-          @click="generateImages"
-          :disabled="generating || selectedStyles.length === 0"
-          class="px-6 py-3 bg-surface-container-high text-primary font-bold rounded-full text-sm hover:bg-primary hover:text-white transition-all disabled:opacity-50"
-        >
-          {{ generating ? '生成中...' : '生成形象' }}
-        </button>
+        <div class="flex gap-3">
+          <div>
+            <button
+              @click="generateImages"
+              :disabled="generating || selectedStyles.length === 0"
+              class="px-6 py-3 bg-surface-container-high text-primary font-bold rounded-full text-sm hover:bg-primary hover:text-white transition-all disabled:opacity-50"
+            >
+              {{ generating ? '生成中...' : '生成形象' }}
+            </button>
+            <p v-if="selectedStyles.length === 0" class="text-xs text-red-500 mt-1">请至少选择一种风格</p>
+          </div>
+          <button
+            @click="generateThreeViews"
+            :disabled="generating"
+            class="px-6 py-3 bg-surface-container-high text-primary font-bold rounded-full text-sm hover:bg-primary hover:text-white transition-all disabled:opacity-50"
+          >
+            {{ generatingThreeViews ? '三视图生成中...' : '生成三视图' }}
+          </button>
+        </div>
         <div class="flex gap-3">
           <button
             @click="$emit('close')"
@@ -104,7 +160,7 @@
 </template>
 
 <script setup>
-import { ref, defineProps, defineEmits } from 'vue'
+import { ref } from 'vue'
 import { charactersApi } from '@/api/characters'
 
 const props = defineProps({
@@ -125,6 +181,16 @@ const promptSuffix = ref('')
 const generatedImages = ref(null)
 const selectedImage = ref(null)
 const generating = ref(false)
+const generatingThreeViews = ref(false)
+const generationError = ref('')
+const threeViews = ref(null)
+const activeView = ref('front')
+
+const viewTypes = [
+  { key: 'front', label: '正面' },
+  { key: 'side', label: '侧面' },
+  { key: 'back', label: '背面' }
+]
 
 const toggleStyle = (styleId) => {
   const index = selectedStyles.value.indexOf(styleId)
@@ -137,6 +203,7 @@ const toggleStyle = (styleId) => {
 
 const generateImages = async () => {
   generating.value = true
+  generationError.value = ''
   try {
     const response = await charactersApi.generateImage(props.character.id, {
       styles: selectedStyles.value,
@@ -145,9 +212,29 @@ const generateImages = async () => {
     })
     generatedImages.value = response.data.images
   } catch (error) {
-    console.error('Failed to generate images:', error)
+    generationError.value = '形象生成失败：' + (error.response?.data?.detail || error.message)
   } finally {
     generating.value = false
+  }
+}
+
+const generateThreeViews = async () => {
+  generatingThreeViews.value = true
+  generationError.value = ''
+  try {
+    const response = await charactersApi.generateThreeViews(props.character.id, {
+      style: selectedStyles.value[0] || 'realistic',
+      prompt_suffix: promptSuffix.value
+    })
+    threeViews.value = response.data
+    // Only auto-select if no image is selected yet
+    if (response.data.views?.front && !selectedImage.value) {
+      selectedImage.value = response.data.views.front
+    }
+  } catch (error) {
+    generationError.value = '三视图生成失败：' + (error.response?.data?.detail || error.message)
+  } finally {
+    generatingThreeViews.value = false
   }
 }
 

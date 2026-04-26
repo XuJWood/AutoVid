@@ -303,6 +303,17 @@ class PikaService(BaseAIService):
 
 def get_video_service(provider: str, api_key: str, **kwargs) -> BaseAIService:
     """Factory function to get video generation service"""
+    # 统一多模态服务
+    if provider.lower() in ["multimodal", "generic"]:
+        from .multimodal_service import MultimodalVideoAdapter
+        return MultimodalVideoAdapter(api_key=api_key, **kwargs)
+
+    # 阿里云百炼视频生成
+    if provider.lower() in ["wanx", "alibaba", "aliyun", "wan"]:
+        from .alibaba_cloud import WanxVideoService
+        model = kwargs.pop("model", "wan2.7-i2v")
+        return WanxVideoService(api_key=api_key, model=model, **kwargs)
+
     services = {
         "kling": KlingAIService,
         "可灵": KlingAIService,

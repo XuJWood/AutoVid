@@ -9,7 +9,7 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime
 import uuid
 
-from app.core.database import get_db, Character, Project
+from app.core.database import get_db, Character, Project, ModelConfig
 
 router = APIRouter()
 
@@ -48,6 +48,7 @@ class CharacterUpdate(BaseModel):
     description: Optional[CharacterDescription] = None
     selected_image: Optional[str] = None
     alternative_images: Optional[List[str]] = None
+    three_views: Optional[Dict[str, Any]] = None
     style: Optional[str] = None
     voice_config: Optional[VoiceConfig] = None
     wardrobe: Optional[List[Dict[str, Any]]] = None
@@ -65,6 +66,7 @@ class CharacterResponse(BaseModel):
     clothing: Optional[str]
     selected_image: Optional[str]
     alternative_images: List[str]
+    three_views: Optional[Dict[str, Any]] = None
     style: str
     character_id: Optional[str]
     voice_config: Dict[str, Any]
@@ -85,6 +87,11 @@ class GenerateImageRequest(BaseModel):
 class GenerateImageResponse(BaseModel):
     images: Dict[str, List[str]]
     message: str
+
+
+class GenerateThreeViewsRequest(BaseModel):
+    style: Optional[str] = "realistic"
+    prompt_suffix: Optional[str] = ""
 
 
 # API Endpoints
@@ -197,22 +204,96 @@ async def generate_character_image(
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
 
-    # TODO: Implement actual image generation using AI service
-    # For now, return mock URLs
-    mock_images = {}
-    for style in request.styles:
-        mock_images[style] = [
-            f"https://placeholder.com/{character_id}_{style}_{i}.jpg"
-            for i in range(request.count_per_style)
-        ]
+    # 获取图像模型配置
+    config_result = await db.execute(
+        select(ModelConfig).where(ModelConfig.name == "image", ModelConfig.is_active == True)
+    )
+    config = config_result.scalar_one_or_none()
+    if not config:
+        raise HTTPException(status_code=400, detail="图像模型未配置，请先在设置中配置图像模型")
 
-    character.alternative_images = [img for imgs in mock_images.values() for img in imgs]
+    # 构建角色描述提示词
+    appearance_parts = []
+    if character.appearance:
+        appearance_parts.append(f"appearance: {character.appearance}")
+    if character.clothing:
+        appearance_parts.append(f"clothing: {character.clothing}")
+    if character.gender:
+        appearance_parts.append(f"gender: {character.gender}")
+    if character.age:
+        appearance_parts.append(f"age: {character.age}")
+
+    base_prompt = ", ".join(appearance_parts) if appearance_parts else character.name
+    if request.prompt_suffix:
+        base_prompt += f", {request.prompt_suffix}"
+
+    # 调用图像生成服务
+    from app.services.image_service import get_image_service
+
+    service = get_image_service(
+        provider=config.provider,
+        api_key=config.api_key,
+        model=config.model,
+        base_url=config.base_url,
+        **(config.params or {})
+    )
+
+    project_id = character.project_id
+
+    generated_images = {}
+    for style in request.styles:
+        style_prompt = f"{base_prompt}, {style} style, character portrait, full body shot, high quality"
+        try:
+            gen_result = await service.generate(prompt=style_prompt, project_id=project_id)
+            if gen_result.success and gen_result.data:
+                images = gen_result.data.get("images", [])
+                generated_images[style] = images
+            else:
+                generated_images[style] = []
+        except Exception as e:
+            generated_images[style] = []
+            print(f"Image generation failed for style {style}: {e}")
+
+    # 保存生成的图片
+    all_images = []
+    for imgs in generated_images.values():
+        all_images.extend(imgs)
+    character.alternative_images = all_images
+    if all_images:
+        character.selected_image = all_images[0]
     await db.commit()
 
     return GenerateImageResponse(
-        images=mock_images,
-        message="Images generated successfully"
+        images=generated_images,
+        message=f"已生成 {len(all_images)} 张角色形象图"
     )
+
+
+@router.post("/{character_id}/generate-three-views")
+async def generate_character_three_views(
+    character_id: int,
+    request: GenerateThreeViewsRequest = GenerateThreeViewsRequest(),
+    db: AsyncSession = Depends(get_db)
+):
+    """生成角色三视图（正面/侧面/背面），保存到角色专属文件夹"""
+    from app.services.character_consistency import CharacterConsistencyService
+
+    service = CharacterConsistencyService(db)
+    result = await service.generate_three_views(
+        character_id=character_id,
+        style=request.style or "anime",
+        prompt_suffix=request.prompt_suffix or ""
+    )
+
+    if "error" in result:
+        raise HTTPException(status_code=404 if "not found" in result["error"] else 400, detail=result["error"])
+
+    return {
+        "character_id": character_id,
+        "views": result["views"],
+        "selected_image": result["selected_image"],
+        "message": "三视图生成完成"
+    }
 
 
 @router.post("/{character_id}/select-image")

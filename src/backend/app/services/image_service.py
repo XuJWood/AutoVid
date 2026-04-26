@@ -211,10 +211,15 @@ def get_image_service(provider: str, api_key: str, **kwargs) -> BaseAIService:
     # 阿里云百炼图像生成
     if provider.lower() in ["wanx", "alibaba", "aliyun", "qwen-image"]:
         from .alibaba_cloud import WanxImageService, QwenImageService
-        model = kwargs.get("model", "wanx2.1-turbo")
+        model = kwargs.pop("model", "wanx2.1-turbo")
         if "qwen" in model.lower():
             return QwenImageService(api_key=api_key, model=model, **kwargs)
         return WanxImageService(api_key=api_key, model=model, **kwargs)
+
+    # 统一多模态服务
+    if provider.lower() in ["multimodal", "generic"]:
+        from .multimodal_service import MultimodalImageAdapter
+        return MultimodalImageAdapter(api_key=api_key, **kwargs)
 
     services = {
         "dalle": DALLEService,

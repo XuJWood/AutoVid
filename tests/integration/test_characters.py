@@ -112,7 +112,7 @@ class TestCharactersAPI:
         character_id = create_response.json()["id"]
 
         # 更新角色
-        update_data = {"name": "更新后的角色名", "age": 30}
+        update_data = {"name": "更新后的角色名", "description": {"age": 30}}
         response = await client.put(
             f"/api/v1/characters/{character_id}",
             json=update_data

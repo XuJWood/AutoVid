@@ -80,7 +80,8 @@ class Character(Base):
     # Images
     selected_image = Column(String(500), nullable=True)
     alternative_images = Column(JSON, default=list)
-    style = Column(String(50), default="realistic")
+    three_views = Column(JSON, default=dict)  # {front, side, back} → local paths
+    style = Column(String(50), default="anime")
 
     # Character ID for consistency
     character_id = Column(String(100), nullable=True)
@@ -167,20 +168,27 @@ class GeneratedVideo(Base):
 
 
 class Storyboard(Base):
-    """Storyboard model for shot-by-shot editing"""
+    """Episode model — each row = one episode (~20s) of the anime short drama"""
     __tablename__ = "storyboards"
 
     id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
-    scene_index = Column(Integer, default=0)
-    shot_index = Column(Integer, default=0)
 
-    # Shot data
-    shot_type = Column(String(50))  # 远景/全景/中景/近景/特写
-    description = Column(Text)
-    image_prompt = Column(Text)  # AI生图提示词
-    video_prompt = Column(Text)  # AI生视频提示词
-    duration = Column(Integer, default=5)
+    # Episode ordering
+    episode_number = Column(Integer, default=0)  # 1-based episode number
+    scene_index = Column(Integer, default=0)     # kept for backward compat
+    shot_index = Column(Integer, default=0)      # always 0 for episodes
+
+    # Episode data
+    title = Column(String(200))
+    episode_script = Column(Text)          # Full mini-script for this episode
+    dialogue_lines = Column(JSON, default=list)  # [{speaker, text, emotion}, ...]
+    character_ids = Column(JSON, default=list)   # [1, 2] — character IDs appearing in this episode
+    shot_type = Column(String(50))        # kept for backward compat
+    description = Column(Text)            # Episode synopsis
+    image_prompt = Column(Text)           # AI image prompt (anime style)
+    video_prompt = Column(Text)           # AI video prompt (anime style, ~20s)
+    duration = Column(Integer, default=20)  # Target ~20s per episode
 
     # Generated resources
     image_url = Column(String(500))

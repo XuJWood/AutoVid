@@ -34,6 +34,10 @@ export const charactersApi = {
     })
   },
 
+  generateThreeViews(characterId, data = {}) {
+    return api.post(`/characters/${characterId}/generate-three-views`, data)
+  },
+
   uploadImage(characterId, file) {
     const formData = new FormData()
     formData.append('file', file)

@@ -110,29 +110,35 @@ class TestPipelineService:
         sample_project_data: dict,
         sample_model_config_data: dict
     ):
-        """测试剧本生成"""
+        """测试漫剧剧本生成"""
         from app.services.pipeline import VideoPipeline
         from app.core.database import Project, ModelConfig
 
-        # 创建项目
         project = Project(**sample_project_data)
         test_db.add(project)
         await test_db.flush()
 
-        # 创建模型配置
         config = ModelConfig(**sample_model_config_data)
         test_db.add(config)
         await test_db.commit()
 
-        # Mock LLM服务
         with patch("app.services.pipeline.get_llm_service") as mock_llm:
             mock_service = MagicMock()
             mock_service.generate = AsyncMock(return_value=MagicMock(
                 success=True,
                 data={
-                    "title": "测试剧本",
-                    "characters": [{"name": "主角"}],
-                    "scenes": []
+                    "title": "测试漫剧",
+                    "art_style": "日系动漫风",
+                    "characters": [{"name": "主角", "gender": "女"}],
+                    "episodes": [
+                        {
+                            "episode_number": 1,
+                            "title": "第一集",
+                            "description": "测试",
+                            "dialogues": [{"speaker": "主角", "text": "你好", "emotion": "开心"}],
+                            "duration": 20
+                        }
+                    ]
                 },
                 content=None,
                 error=None
@@ -146,7 +152,102 @@ class TestPipelineService:
             )
 
             assert "title" in result
-            assert result["title"] == "测试剧本"
+            assert result["title"] == "测试漫剧"
+            assert result["art_style"] == "日系动漫风"
+            assert "episodes" in result
+
+    @pytest.mark.asyncio
+    async def test_generate_episodes(
+        self,
+        test_db,
+        sample_project_data: dict,
+        sample_model_config_data: dict
+    ):
+        """测试剧集生成（episodes → Storyboard 行）"""
+        from app.services.pipeline import VideoPipeline
+        from app.core.database import Project
+
+        project = Project(**sample_project_data)
+        project.script_content = {
+            "title": "测试",
+            "episodes": [
+                {
+                    "episode_number": 1,
+                    "title": "第一集",
+                    "description": "测试描述",
+                    "environment": "城市",
+                    "time": "清晨",
+                    "mood": "紧张",
+                    "script": "完整的剧本文字",
+                    "dialogues": [
+                        {"speaker": "角色A", "text": "你好", "emotion": "开心"}
+                    ],
+                    "duration": 20
+                },
+                {
+                    "episode_number": 2,
+                    "title": "第二集",
+                    "description": "测试描述2",
+                    "environment": "公园",
+                    "time": "黄昏",
+                    "mood": "温馨",
+                    "script": "更多剧本",
+                    "dialogues": [],
+                    "duration": 20
+                }
+            ]
+        }
+        test_db.add(project)
+        await test_db.commit()
+
+        pipeline = VideoPipeline(test_db)
+        episodes = await pipeline.generate_episodes(project_id=project.id)
+
+        assert len(episodes) == 2
+        assert episodes[0].episode_number == 1
+        assert episodes[0].title == "第一集"
+        assert episodes[0].duration == 20
+        assert episodes[0].episode_script == "完整的剧本文字"
+        assert len(episodes[0].dialogue_lines) == 1
+        assert "日系动漫" in episodes[0].image_prompt
+        assert "日系动漫" in episodes[0].video_prompt
+
+    @pytest.mark.asyncio
+    async def test_generate_episodes_backward_compat(
+        self,
+        test_db,
+        sample_project_data: dict
+    ):
+        """测试旧 scenes 格式向后兼容"""
+        from app.services.pipeline import VideoPipeline
+        from app.core.database import Project
+
+        project = Project(**sample_project_data)
+        project.script_content = {
+            "title": "旧格式",
+            "scenes": [
+                {
+                    "id": 1,
+                    "name": "第一场",
+                    "environment": "城市",
+                    "time": "清晨",
+                    "mood": "平静",
+                    "description": "旧格式描述",
+                    "shots": [
+                        {"id": 1, "type": "全景", "description": "画面", "duration": 5}
+                    ]
+                }
+            ]
+        }
+        test_db.add(project)
+        await test_db.commit()
+
+        pipeline = VideoPipeline(test_db)
+        episodes = await pipeline.generate_episodes(project_id=project.id)
+
+        assert len(episodes) == 1
+        assert episodes[0].title == "第一场"
+        assert episodes[0].duration == 20
 
     @pytest.mark.asyncio
     async def test_pipeline_progress(
@@ -159,31 +260,36 @@ class TestPipelineService:
         from app.services.pipeline import VideoPipeline, PipelineProgress
         from app.core.database import Project, ModelConfig
 
-        # 创建项目
         project = Project(**sample_project_data)
         test_db.add(project)
         await test_db.flush()
 
-        # 创建模型配置
         config = ModelConfig(**sample_model_config_data)
         test_db.add(config)
         await test_db.commit()
 
-        # 收集进度
         progress_list = []
 
         async def capture_progress(progress: PipelineProgress):
             progress_list.append(progress)
 
-        # Mock LLM服务
         with patch("app.services.pipeline.get_llm_service") as mock_llm:
             mock_service = MagicMock()
             mock_service.generate = AsyncMock(return_value=MagicMock(
                 success=True,
                 data={
-                    "title": "测试剧本",
+                    "title": "测试漫剧",
                     "characters": [],
-                    "scenes": []
+                    "episodes": [
+                        {
+                            "episode_number": 1,
+                            "title": "第一集",
+                            "description": "测试",
+                            "duration": 20,
+                            "dialogues": [],
+                            "script": "测试剧本"
+                        }
+                    ]
                 },
                 content=None,
                 error=None
@@ -198,5 +304,4 @@ class TestPipelineService:
                 user_input="测试故事"
             )
 
-            # 验证进度回调被调用
             assert len(progress_list) > 0

@@ -1,8 +1,10 @@
 """
 AutoVid Backend - FastAPI Application Entry Point
 """
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
@@ -38,6 +40,12 @@ app.add_middleware(
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
+
+# Mount media directory for serving generated files
+media_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "media")
+media_dir = os.path.abspath(media_dir)
+os.makedirs(media_dir, exist_ok=True)
+app.mount("/media", StaticFiles(directory=media_dir), name="media")
 
 
 @app.get("/health")

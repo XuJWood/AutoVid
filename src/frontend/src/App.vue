@@ -11,7 +11,6 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import TopNavBar from '@/components/TopNavBar.vue'
 import TopNavigation from '@/components/TopNavigation.vue'
 import BottomNavBar from '@/components/BottomNavBar.vue'
 

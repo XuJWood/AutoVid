@@ -5,7 +5,7 @@
       <aside class="col-span-12 lg:col-span-3 flex flex-col gap-6">
         <div class="flex justify-between items-end">
           <h2 class="text-xl font-bold font-headline tracking-tight">角色设定</h2>
-          <button @click="showAddCharacter = true" class="text-xs text-primary font-bold">+ 添加角色</button>
+          <span class="text-xs text-on-surface-variant">{{ characters.length }} 个角色</span>
         </div>
         <div class="bg-surface-container-low rounded-lg p-6 flex-1 overflow-y-auto custom-scrollbar">
           <div class="space-y-4">
@@ -18,7 +18,7 @@
                 <div class="w-16 h-20 bg-surface-container rounded-lg overflow-hidden">
                   <img
                     v-if="character.selected_image"
-                    :src="character.selected_image"
+                    :src="toPlayableUrl(character.selected_image)"
                     class="w-full h-full object-cover"
                   />
                   <span v-else class="material-symbols-outlined text-3xl text-on-surface-variant">person</span>
@@ -44,13 +44,9 @@
               </div>
             </div>
 
-            <button
-              @click="showAddCharacter = true"
-              class="w-full py-4 border-2 border-dashed border-outline-variant/30 rounded-lg text-on-surface-variant hover:bg-surface-container transition-colors"
-            >
-              <span class="material-symbols-outlined">add</span>
-              <span class="text-xs">添加角色</span>
-            </button>
+            <p class="text-xs text-center text-on-surface-variant/50 py-4">
+              角色由剧本生成时自动创建
+            </p>
           </div>
         </div>
       </aside>
@@ -60,9 +56,25 @@
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-xl font-bold font-headline tracking-tight">剧本内容</h2>
-            <p class="text-sm text-on-surface-variant">编辑剧本结构、场景和镜头</p>
+            <p class="text-sm text-on-surface-variant">编辑剧本结构、剧集和对话</p>
           </div>
           <div class="flex gap-2">
+            <button
+              v-if="isEditing"
+              @click="saveScript"
+              :disabled="saving"
+              class="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-full text-xs font-bold hover:brightness-95 transition-all disabled:opacity-50"
+            >
+              <span class="material-symbols-outlined text-sm">save</span>
+              {{ saving ? '保存中...' : '保存剧本' }}
+            </button>
+            <button
+              @click="toggleEdit"
+              class="flex items-center gap-2 bg-surface-container px-4 py-2 rounded-full text-xs font-bold hover:bg-surface-container-high transition-all"
+            >
+              <span class="material-symbols-outlined text-sm">{{ isEditing ? 'close' : 'edit' }}</span>
+              {{ isEditing ? '取消编辑' : '编辑剧本' }}
+            </button>
             <button
               @click="generateScript"
               :disabled="generating"
@@ -72,18 +84,18 @@
               {{ generating ? '生成中...' : '生成剧本' }}
             </button>
             <router-link
-              v-if="scriptContent?.scenes"
+              v-if="scriptContent?.episodes || scriptContent?.scenes"
               :to="`/drama/${projectId}/storyboard`"
               class="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-full text-xs font-bold hover:brightness-95 transition-all"
             >
               <span class="material-symbols-outlined text-sm">movie</span>
-              进入分镜
+              编辑剧集
             </router-link>
           </div>
         </div>
 
         <!-- 额外提示词输入 -->
-        <div v-if="!generating && !scriptContent?.scenes" class="bg-surface-container-low rounded-lg p-4">
+        <div v-if="!generating && !scriptContent?.episodes && !scriptContent?.scenes" class="bg-surface-container-low rounded-lg p-4">
           <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2 block">
             额外创作要求（可选）
           </label>
@@ -103,9 +115,19 @@
             </div>
             <div class="flex-1">
               <h4 class="font-bold text-primary">{{ progressMessage }}</h4>
+              <div class="flex items-center gap-2 mt-1">
+                <span
+                  v-for="stage in progressStages"
+                  :key="stage.key"
+                  class="text-xs px-2 py-0.5 rounded-full transition-colors"
+                  :class="stage.done ? 'bg-primary text-on-primary' : stage.active ? 'bg-primary/20 text-primary' : 'bg-surface-container-high text-on-surface-variant/50'"
+                >
+                  {{ stage.label }}
+                </span>
+              </div>
               <div class="w-full bg-surface-container-high rounded-full h-2 mt-2">
                 <div
-                  class="bg-primary h-2 rounded-full transition-all duration-300"
+                  class="bg-primary h-2 rounded-full transition-all duration-500"
                   :style="{ width: progress + '%' }"
                 ></div>
               </div>
@@ -123,12 +145,26 @@
         </div>
 
         <!-- Script Content -->
-        <div class="bg-surface-container-lowest rounded-lg p-8 shadow-sm flex-1">
-          <div v-if="scriptContent && scriptContent.scenes" class="space-y-6">
-            <!-- 剧本标题和简介 -->
+        <div v-if="loading" class="bg-surface-container-lowest rounded-lg p-12 text-center">
+          <span class="material-symbols-outlined text-4xl text-primary animate-spin mb-3">autorenew</span>
+          <p class="text-sm text-on-surface-variant">正在加载项目数据...</p>
+        </div>
+        <div v-else-if="scriptContent && (scriptContent.episodes || scriptContent.scenes)" class="bg-surface-container-lowest rounded-lg p-8 shadow-sm flex-1">
+            <!-- 剧本标题和简介（可编辑） -->
             <div class="border-b border-surface-container pb-4">
-              <h3 class="text-2xl font-bold font-headline">{{ scriptContent.title }}</h3>
-              <p v-if="scriptContent.logline" class="text-on-surface-variant mt-2 italic">{{ scriptContent.logline }}</p>
+              <template v-if="isEditing">
+                <input v-model="editableScript.title" class="w-full text-2xl font-bold font-headline bg-surface-container-low rounded px-2 py-1 mb-2 border border-surface-container focus:outline-none focus:border-primary" />
+                <textarea v-model="editableScript.logline" rows="2" class="w-full text-on-surface-variant bg-surface-container-low rounded px-2 py-1 italic text-sm border border-surface-container focus:outline-none focus:border-primary"></textarea>
+                <div class="flex gap-4 mt-2">
+                  <label class="text-xs text-on-surface-variant">画风：<input v-model="editableScript.art_style" class="bg-surface-container-low rounded px-2 py-1 border border-surface-container text-sm w-64" placeholder="日系动漫风，二次元" /></label>
+                  <label class="text-xs text-on-surface-variant">总时长：<input v-model.number="editableScript.total_duration" type="number" class="bg-surface-container-low rounded px-2 py-1 border border-surface-container text-sm w-20" />s</label>
+                </div>
+              </template>
+              <template v-else>
+                <h3 class="text-2xl font-bold font-headline">{{ scriptContent.title }}</h3>
+                <p v-if="scriptContent.logline" class="text-on-surface-variant mt-2 italic">{{ scriptContent.logline }}</p>
+                <p v-if="scriptContent.art_style" class="text-xs text-on-surface-variant mt-1">{{ scriptContent.art_style }}</p>
+              </template>
             </div>
 
             <!-- 角色列表 -->
@@ -142,48 +178,71 @@
                 >
                   <div class="font-bold text-sm">{{ char.name }}</div>
                   <div class="text-xs text-on-surface-variant">{{ char.age }}岁 · {{ char.occupation || '未知' }}</div>
-                  <div v-if="char.personality" class="text-xs text-on-surface-variant mt-1">{{ char.personality }}</div>
+                  <div v-if="char.personality" class="text-xs text-on-surface-variant mt-1">{{ typeof char.personality === 'string' ? char.personality : char.personality?.traits?.join('、') }}</div>
                 </div>
               </div>
             </div>
 
-            <!-- 场景列表 -->
-            <div v-for="scene in scriptContent.scenes" :key="scene.id" class="border-b border-surface-container pb-6 last:border-0">
+            <!-- 剧集列表（优先 episodes，回退 scenes） -->
+            <div v-for="(ep, epIdx) in episodes" :key="ep.episode_number || ep.id" class="border-b border-surface-container pb-6 last:border-0">
               <h3 class="font-bold text-lg mb-2 flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary">scene</span>
-                {{ scene.name }}
+                <span class="material-symbols-outlined text-primary">movie</span>
+                第{{ ep.episode_number || ep.id }}集：{{ isEditing ? '' : (ep.title || '未命名') }}
+                <input v-if="isEditing" v-model="ep.title" class="bg-surface-container-low rounded px-2 py-1 border border-surface-container text-sm flex-1 focus:outline-none focus:border-primary" />
               </h3>
-              <p class="text-sm text-on-surface-variant mb-4">
-                📍 {{ scene.environment }}
-                <span v-if="scene.time"> · 🕐 {{ scene.time }}</span>
-                <span v-if="scene.mood"> · 🎭 {{ scene.mood }}</span>
+              <p class="text-sm text-on-surface-variant mb-2">
+                {{ ep.environment || ep.location }}
+                <span v-if="ep.time"> · {{ ep.time }}</span>
+                <span v-if="ep.mood"> · {{ ep.mood }}</span>
+                <span class="ml-2 text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{{ ep.duration || 20 }}s</span>
               </p>
+              <p class="text-sm mb-3 text-on-surface-variant">{{ ep.description }}</p>
 
-              <div class="space-y-3">
+              <!-- 对话预览 -->
+              <div v-if="ep.dialogues && ep.dialogues.length > 0" class="bg-primary/5 rounded-lg p-3 mb-3">
+                <p class="text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-wider">对话</p>
+                <div class="space-y-1">
+                  <div v-for="(d, dIdx) in ep.dialogues" :key="dIdx" class="text-sm">
+                    <template v-if="isEditing">
+                      <div class="flex gap-2 mb-1">
+                        <input v-model="d.speaker" class="bg-surface-container-low rounded px-2 py-0.5 border border-surface-container text-xs w-20 focus:outline-none focus:border-primary" placeholder="角色" />
+                        <input v-model="d.text" class="bg-surface-container-low rounded px-2 py-0.5 border border-surface-container text-xs flex-1 focus:outline-none focus:border-primary" placeholder="台词" />
+                        <input v-model="d.emotion" class="bg-surface-container-low rounded px-2 py-0.5 border border-surface-container text-xs w-16 focus:outline-none focus:border-primary" placeholder="情绪" />
+                      </div>
+                    </template>
+                    <template v-else>
+                      <span class="text-primary font-bold">{{ d.speaker }}</span><span v-if="d.speaker">：</span><span class="text-on-surface">{{ d.text }}</span>
+                      <span v-if="d.emotion" class="text-xs text-on-surface-variant ml-2">({{ d.emotion }})</span>
+                    </template>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 镜头列表 -->
+              <div class="space-y-2">
                 <div
-                  v-for="shot in scene.shots"
+                  v-for="shot in ep.shots"
                   :key="shot.id"
-                  class="bg-surface-container-low p-4 rounded-lg"
+                  class="bg-surface-container-low p-3 rounded-lg"
                 >
-                  <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center justify-between mb-1">
                     <div class="flex items-center gap-2">
-                      <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded">{{ shot.type }}</span>
+                      <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{{ shot.type }}</span>
                       <span v-if="shot.movement" class="text-xs text-on-surface-variant">{{ shot.movement }}</span>
                     </div>
                     <span class="text-xs font-bold text-on-surface-variant">{{ shot.duration }}s</span>
                   </div>
-                  <p class="text-sm mb-2">{{ shot.description }}</p>
-                  <p v-if="shot.dialogue" class="text-sm text-primary-container bg-primary/5 p-2 rounded italic">"{{ shot.dialogue }}"</p>
+                  <p class="text-xs mb-1">{{ shot.description }}</p>
+                  <p v-if="shot.dialogue" class="text-xs text-primary-container bg-primary/5 p-2 rounded italic">{{ shot.dialogue }}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div v-else class="text-center py-16 text-on-surface-variant">
-            <span class="material-symbols-outlined text-6xl mb-4 opacity-50">description</span>
-            <p class="text-lg">还没有剧本内容</p>
-            <p class="text-sm">点击"生成剧本"开始创作</p>
-          </div>
+        <div v-else class="bg-surface-container-lowest rounded-lg p-12 text-center">
+          <span class="material-symbols-outlined text-6xl mb-4 opacity-50">description</span>
+          <p class="text-lg">还没有剧本内容</p>
+          <p class="text-sm">点击"生成剧本"开始创作日系动漫短剧</p>
         </div>
       </section>
     </div>
@@ -199,7 +258,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { projectsApi } from '@/api/projects'
 import { charactersApi } from '@/api/characters'
@@ -214,14 +273,53 @@ const scriptContent = ref(null)
 const generating = ref(false)
 const progress = ref(0)
 const progressMessage = ref('')
+const progressStages = ref([
+  { key: 'prepare', label: '准备提示词', done: false, active: false },
+  { key: 'generate', label: 'AI创作中', done: false, active: false },
+  { key: 'parse', label: '解析剧本', done: false, active: false },
+  { key: 'save', label: '保存数据', done: false, active: false }
+])
 const resultMessage = ref('')
 const resultSuccess = ref(true)
 const customPrompt = ref('')
 const showCharacterModal = ref(false)
-const showAddCharacter = ref(false)
 const selectedCharacter = ref(null)
+const loading = ref(true)
+const isEditing = ref(false)
+const saving = ref(false)
+const editableScript = ref(null)
+
+function toPlayableUrl(url) {
+  if (!url) return null
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  const idx = url.indexOf('/media/')
+  if (idx !== -1) return url.substring(idx)
+  return url
+}
+
+// 优先 episodes，回退 scenes
+const episodes = computed(() => {
+  if (!scriptContent.value) return []
+  return scriptContent.value.episodes || scriptContent.value.scenes || []
+})
+
+const updateStage = (stageKey) => {
+  let found = false
+  for (const stage of progressStages.value) {
+    if (stage.key === stageKey) {
+      stage.active = true
+      found = true
+    } else if (!found) {
+      stage.done = true
+      stage.active = false
+    } else {
+      stage.active = false
+    }
+  }
+}
 
 const loadProject = async () => {
+  loading.value = true
   try {
     const [projectRes, charactersRes] = await Promise.all([
       projectsApi.get(projectId),
@@ -232,22 +330,61 @@ const loadProject = async () => {
     scriptContent.value = projectRes.data.script_content
   } catch (error) {
     console.error('Failed to load project:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const toggleEdit = () => {
+  if (isEditing.value) {
+    isEditing.value = false
+    editableScript.value = null
+  } else {
+    editableScript.value = JSON.parse(JSON.stringify(scriptContent.value || {}))
+    if (!editableScript.value.episodes && editableScript.value.scenes) {
+      editableScript.value.episodes = editableScript.value.scenes
+    }
+    isEditing.value = true
+  }
+}
+
+const saveScript = async () => {
+  saving.value = true
+  try {
+    // 将 episodes 同步回 script_content
+    const toSave = { ...editableScript.value }
+    // 如果有旧的 scenes 键，用 episodes 替代
+    if (toSave.scenes && toSave.episodes) {
+      delete toSave.scenes
+    }
+    await projectsApi.update(projectId, { script_content: toSave })
+    scriptContent.value = toSave
+    isEditing.value = false
+    editableScript.value = null
+    resultMessage.value = '剧本已保存'
+    resultSuccess.value = true
+    setTimeout(() => { resultMessage.value = '' }, 2000)
+  } catch (error) {
+    console.error('Failed to save script:', error)
+    resultMessage.value = '保存失败：' + error.message
+    resultSuccess.value = false
+  } finally {
+    saving.value = false
   }
 }
 
 const generateScript = async () => {
   generating.value = true
   progress.value = 0
-  progressMessage.value = '正在准备...'
+  progressMessage.value = '正在准备提示词...'
   resultMessage.value = ''
+  for (const s of progressStages.value) { s.done = false; s.active = false }
+  progressStages.value[0].active = true
 
   try {
-    // 使用 fetch 处理流式响应
-    const response = await fetch(`http://127.0.0.1:8000/api/v1/projects/${projectId}/script/generate`, {
+    const response = await fetch(`/api/v1/projects/${projectId}/script/generate`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         input: project.value?.description || '',
         prompt_suffix: customPrompt.value
@@ -256,13 +393,15 @@ const generateScript = async () => {
 
     const reader = response.body.getReader()
     const decoder = new TextDecoder()
+    let buffer = ''
 
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
 
-      const text = decoder.decode(value)
-      const lines = text.split('\n')
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
 
       for (const line of lines) {
         if (line.startsWith('data: ')) {
@@ -275,10 +414,23 @@ const generateScript = async () => {
             if (data.message) {
               progressMessage.value = data.message
             }
-            if (data.status === 'completed') {
-              scriptContent.value = data.script
-              resultMessage.value = data.message
-              resultSuccess.value = data.message.includes('成功')
+            if (data.status === 'starting' || data.progress < 20) {
+              updateStage('prepare')
+            } else if (data.status === 'generating' || (data.progress >= 20 && data.progress < 80)) {
+              updateStage('generate')
+            } else if (data.progress >= 80 && data.progress < 100) {
+              updateStage('parse')
+            }
+
+            if (data.status === 'completed' || data.progress >= 100) {
+              updateStage('save')
+              if (data.script) {
+                scriptContent.value = data.script
+              }
+              if (data.message) {
+                resultMessage.value = data.message
+                resultSuccess.value = data.status === 'completed'
+              }
             }
           } catch (e) {
             // 忽略解析错误

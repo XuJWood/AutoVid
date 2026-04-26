@@ -2,8 +2,10 @@
 Alibaba Cloud Bailian (阿里云百炼) Services
 Supports: 通义千问 (文本), 万相 (图像), CosyVoice (语音)
 """
+import os
 import json
 import asyncio
+import tempfile
 import httpx
 from typing import Optional, Dict, Any, List
 from openai import AsyncOpenAI
@@ -118,6 +120,7 @@ class WanxImageService(BaseAIService):
         size: str = "1024*1024",
         n: int = 1,
         style: Optional[str] = None,
+        project_id: Optional[int] = None,
         **kwargs
     ) -> GenerationResult:
         """生成图像
@@ -128,6 +131,7 @@ class WanxImageService(BaseAIService):
             size: 图像尺寸 (512*512, 720*1280, 1024*1024 等)
             n: 生成数量
             style: 风格 (photography, portrait, 3d, anime, oil_painting, watercolor, sketch 等)
+            project_id: 项目ID（提供时下载到本地项目文件夹）
         """
         try:
             url = f"{self.base_url}/api/v1/services/aigc/text2image/image-synthesis"
@@ -201,10 +205,24 @@ class WanxImageService(BaseAIService):
                         results = task_result.get("output", {}).get("results", [])
                         urls = [r.get("url") for r in results if r.get("url")]
 
+                        # 下载到本地项目文件夹
+                        local_paths = []
+                        if project_id and urls:
+                            from .media_storage import download_and_save_image
+                            for i, url in enumerate(urls):
+                                local_path = await download_and_save_image(url, project_id, prefix=f"img_{i}")
+                                if local_path:
+                                    local_paths.append(local_path)
+
                         return GenerationResult(
                             success=True,
                             content=json.dumps(urls),
-                            data={"urls": urls, "task_id": task_id}
+                            data={
+                                "images": urls,
+                                "urls": urls,
+                                "task_id": task_id,
+                                "local_paths": local_paths
+                            }
                         )
                     elif status == "FAILED":
                         error_msg = task_result.get("output", {}).get("message", "生成失败")
@@ -227,16 +245,165 @@ class WanxImageService(BaseAIService):
             return False
 
 
-class CosyVoiceService(BaseAIService):
-    """CosyVoice 语音合成服务"""
+class WanxVideoService(BaseAIService):
+    """万相视频生成服务（wan2.7-i2v：图生视频 + 音频驱动口型同步）"""
 
     DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com"
 
     def __init__(
         self,
         api_key: str,
-        model: str = "cosyvoice-v1",
-        voice: str = "longxiaochun",
+        model: str = "wan2.7-i2v",
+        base_url: str = None,
+        **kwargs
+    ):
+        effective_base_url = base_url or self.DEFAULT_BASE_URL
+        super().__init__(api_key, effective_base_url, **kwargs)
+        self.model = model
+
+    # Resolution to size mapping (t2v models support limited sizes)
+    _SIZE_MAP = {
+        "720P": "1280*720",
+        "1080P": "1280*720",       # t2v only supports up to 720P
+        "480P": "832*480",
+        "720P_PORTRAIT": "720*1280",
+        "1080P_PORTRAIT": "720*1280",
+        "1:1_720P": "960*960",
+    }
+
+    async def generate(
+        self,
+        prompt: str,
+        image_url: Optional[str] = None,
+        audio_url: Optional[str] = None,
+        duration: int = 5,
+        resolution: str = "720P",
+        project_id: Optional[int] = None,
+        **kwargs
+    ) -> GenerationResult:
+        """生成视频
+
+        t2v (wanx2.1-t2v-turbo): 文生视频，5s，无 media
+        i2v (wan2.7-i2v): 图生视频 + 音频驱动，2-15s，需要 media (HTTP URLs)
+        """
+        try:
+            url = f"{self.base_url}/api/v1/services/aigc/video-generation/video-synthesis"
+
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+                "X-DashScope-Async": "enable"
+            }
+
+            input_data = {"prompt": prompt}
+            is_i2v = "i2v" in self.model
+
+            if is_i2v:
+                media = []
+                if image_url:
+                    media.append({"url": image_url, "type": "first_frame"})
+                if audio_url:
+                    media.append({"url": audio_url, "type": "driving_audio"})
+                if media:
+                    input_data["media"] = media
+
+            if is_i2v:
+                parameters = {"resolution": resolution, "duration": duration, "prompt_extend": True}
+            else:
+                size = self._SIZE_MAP.get(resolution, "1280*720")
+                parameters = {"size": size, "prompt_extend": True}
+
+            payload = {
+                "model": self.model,
+                "input": input_data,
+                "parameters": parameters
+            }
+
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                response = await client.post(url, headers=headers, json=payload)
+
+                if response.status_code != 200:
+                    return GenerationResult(
+                        success=False,
+                        error=f"创建视频生成任务失败: {response.text}"
+                    )
+
+                result = response.json()
+                task_id = result.get("output", {}).get("task_id")
+
+                if not task_id:
+                    return GenerationResult(success=False, error="未获取视频任务ID")
+
+                # 轮询任务状态
+                task_url = f"{self.base_url}/api/v1/tasks/{task_id}"
+                max_wait = 600
+                waited = 0
+
+                while waited < max_wait:
+                    await asyncio.sleep(5)
+                    waited += 5
+
+                    task_response = await client.get(
+                        task_url,
+                        headers={"Authorization": f"Bearer {self.api_key}"}
+                    )
+
+                    if task_response.status_code != 200:
+                        continue
+
+                    task_result = task_response.json()
+                    status = task_result.get("output", {}).get("task_status")
+
+                    if status == "SUCCEEDED":
+                        video_url = task_result.get("output", {}).get("video_url")
+
+                        local_path = None
+                        if project_id and video_url:
+                            from .media_storage import download_and_save_video
+                            local_path = await download_and_save_video(video_url, project_id)
+
+                        return GenerationResult(
+                            success=True,
+                            content=video_url,
+                            data={
+                                "video_url": video_url,
+                                "task_id": task_id,
+                                "local_path": local_path
+                            }
+                        )
+                    elif status == "FAILED":
+                        error_msg = task_result.get("output", {}).get("message", "视频生成失败")
+                        return GenerationResult(success=False, error=error_msg)
+
+                return GenerationResult(success=False, error="视频生成超时")
+
+        except Exception as e:
+            return GenerationResult(success=False, error=str(e))
+
+    async def test_connection(self) -> bool:
+        try:
+            result = await self.generate("test", duration=2, resolution="480p")
+            return result.success
+        except:
+            return False
+
+
+class CosyVoiceService(BaseAIService):
+    """语音合成服务 — 使用 Qwen TTS (DashScope 原生接口)"""
+
+    DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com"
+
+    AVAILABLE_VOICES = [
+        "Cherry", "Ethan", "Jennifer", "Ryan", "Katerina", "Elias",
+        "Nofish", "Chelsie", "Serena", "Jada", "Dylan", "Sunny",
+        "Li", "Marcus", "Roy", "Peter", "Rocky",
+    ]
+
+    def __init__(
+        self,
+        api_key: str,
+        model: str = "qwen3-tts-flash",
+        voice: str = "Cherry",
         base_url: str = None,
         **kwargs
     ):
@@ -256,13 +423,13 @@ class CosyVoiceService(BaseAIService):
         """合成语音
 
         Args:
-            text: 要合成的文本
-            voice: 音色 (longxiaochun, longwan, longyue 等)
+            text: 要合成的文本 (最大600字符)
+            voice: 音色 (Cherry, Ethan, Jennifer 等)
             format: 音频格式 (wav, mp3)
             sample_rate: 采样率
         """
         try:
-            url = f"{self.base_url}/api/v1/services/audio/tts"
+            url = f"{self.base_url}/api/v1/services/aigc/multimodal-generation/generation"
 
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
@@ -272,12 +439,9 @@ class CosyVoiceService(BaseAIService):
             payload = {
                 "model": self.model,
                 "input": {
-                    "text": text
-                },
-                "parameters": {
+                    "text": text,
                     "voice": voice or self.default_voice,
-                    "format": format,
-                    "sample_rate": sample_rate
+                    "language_type": "Chinese"
                 }
             }
 
@@ -287,23 +451,27 @@ class CosyVoiceService(BaseAIService):
                 if response.status_code != 200:
                     return GenerationResult(
                         success=False,
-                        error=f"语音合成失败: {response.text}"
+                        error=f"语音合成失败: {response.text[:300]}"
                     )
 
                 result = response.json()
+                audio_output = result.get("output", {}).get("audio", {})
+                audio_url = audio_output.get("url") if isinstance(audio_output, dict) else None
 
-                # 获取音频URL或base64
-                audio_url = result.get("output", {}).get("audio")
-                audio_data = result.get("output", {}).get("audio_data")
+                if not audio_url:
+                    return GenerationResult(
+                        success=False,
+                        error="语音合成成功但未获取到音频URL"
+                    )
 
                 return GenerationResult(
                     success=True,
-                    content=audio_url or audio_data,
+                    content=audio_url,
                     data={
                         "audio_url": audio_url,
-                        "audio_data": audio_data,
                         "format": format,
-                        "sample_rate": sample_rate
+                        "sample_rate": sample_rate,
+                        "characters": result.get("usage", {}).get("characters", 0)
                     }
                 )
 
@@ -337,6 +505,7 @@ class QwenImageService(BaseAIService):
         prompt: str,
         size: str = "1024*1024",
         n: int = 1,
+        project_id: Optional[int] = None,
         **kwargs
     ) -> GenerationResult:
         """生成图像"""
@@ -396,10 +565,19 @@ class QwenImageService(BaseAIService):
                     if status == "SUCCEEDED":
                         results = task_result.get("output", {}).get("results", [])
                         urls = [r.get("url") for r in results if r.get("url")]
+
+                        local_paths = []
+                        if project_id and urls:
+                            from .media_storage import download_and_save_image
+                            for i, url in enumerate(urls):
+                                local_path = await download_and_save_image(url, project_id, prefix=f"img_{i}")
+                                if local_path:
+                                    local_paths.append(local_path)
+
                         return GenerationResult(
                             success=True,
                             content=json.dumps(urls),
-                            data={"urls": urls, "task_id": task_id}
+                            data={"images": urls, "urls": urls, "task_id": task_id, "local_paths": local_paths}
                         )
                     elif status == "FAILED":
                         return GenerationResult(

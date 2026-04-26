@@ -173,12 +173,9 @@ async def generate_script(
             duration=project.duration,
             platform=project.target_platform,
             description=project.description,
-            user_input=request.input
+            user_input=request.input,
+            prompt_suffix=request.prompt_suffix or ""
         )
-
-        # 添加用户额外提示词
-        if request.prompt_suffix:
-            user_prompt += f"\n\n## 用户额外要求\n{request.prompt_suffix}"
 
         yield f"data: {json.dumps({'status': 'generating', 'message': '正在调用AI生成剧本...', 'progress': 20}, ensure_ascii=False)}\n\n"
         await asyncio.sleep(0.1)
@@ -271,10 +268,10 @@ async def generate_script(
                     age=char_data.get("age"),
                     gender=char_data.get("gender"),
                     occupation=char_data.get("occupation"),
-                    personality=char_data.get("personality"),
+                    personality=str(char_data.get("personality", "")) if char_data.get("personality") else None,
                     appearance=appearance_str,
                     clothing=clothing_str,
-                    style="realistic"
+                    style="anime"
                 )
                 db.add(character)
             await db.commit()
@@ -294,69 +291,173 @@ async def generate_script(
 
 
 def get_mock_script(project: Project) -> Dict[str, Any]:
-    """生成模拟剧本数据"""
+    """生成模拟漫剧剧本数据"""
     return {
         "title": project.name,
-        "logline": f"一个关于{project.description or '人生'}的故事",
+        "logline": f"一个关于{project.description or '命运'}的日系动漫短剧",
         "theme": "成长与选择",
         "total_duration": project.duration or 180,
+        "art_style": "日系动漫风，二次元，精致的线条和色彩",
+        "hook_description": "神秘转学生突然出现在教室，她身上的秘密即将揭开",
+        "twist_points": ["反转1：转学生的真实身份", "反转2：主角隐藏的能力觉醒", "反转3：真正的敌人是最亲近的人"],
         "characters": [
             {
-                "name": "主角",
+                "name": "小樱",
                 "role": "主角",
-                "age": 25,
-                "gender": "male",
-                "occupation": "程序员",
-                "personality": {
-                    "traits": ["温和", "内敛", "有责任心"],
-                    "strengths": ["专注", "善良"],
-                    "weaknesses": ["不善表达", "过于理想化"]
-                },
-                "appearance": {
-                    "face": "清秀的脸庞，黑框眼镜",
-                    "hair": "短发，略微凌乱",
-                    "body": "清瘦身材",
-                    "distinctive_features": "左手腕戴着一块旧手表"
-                },
-                "clothing": {
-                    "style": "休闲简约",
-                    "casual": "卫衣、牛仔裤",
-                    "colors": ["深蓝", "灰色", "白色"]
-                },
-                "backstory": "一个刚毕业的程序员，怀揣梦想来到大城市"
+                "age": 17,
+                "gender": "女",
+                "occupation": "高中生",
+                "personality": "活泼开朗、善良勇敢、偶尔冒失",
+                "appearance": "精致的瓜子脸，大而有神的紫色眼眸，粉色双马尾长发，纤细的身材，白皙的皮肤",
+                "clothing": "日系学院风，白色水手服配蓝色短裙，日常穿可爱的连衣裙，战斗时穿魔法少女装",
+                "background": "看似普通的高中女生，其实体内隐藏着远古的魔力",
+                "archetype": "觉醒少女"
+            },
+            {
+                "name": "夜",
+                "role": "男主",
+                "age": 18,
+                "gender": "男",
+                "occupation": "高中生/暗影守卫",
+                "personality": "冷酷寡言、深情专一、行动力强",
+                "appearance": "俊朗的面容，深邃的蓝色眼睛，银色短发，修长的身材，皮肤偏白",
+                "clothing": "黑色校服外套，日常穿深色系休闲装，战斗时穿暗影风衣",
+                "background": "被派来保护小樱的暗影守卫，但逐渐对她产生真正的感情",
+                "archetype": "冷面守护者"
             }
         ],
-        "scenes": [
+        "episodes": [
             {
-                "id": 1,
-                "name": "开场",
-                "location": "城市街道",
-                "environment": "繁华的都市街道，高楼林立，人流如织",
+                "episode_number": 1,
+                "title": "神秘的转学生",
+                "location": "樱花高中",
+                "environment": "日系动漫风格的校园，樱花飘落的教室，温暖的光线",
                 "time": "清晨",
-                "mood": "希望与迷茫交织",
-                "description": "主角独自走在上班的路上",
+                "mood": "好奇与期待",
+                "conflict": "小樱对新来的转学生感到莫名的熟悉又不安",
+                "twist": "转学生夜其实一直在暗中观察小樱",
+                "description": "新学期第一天，神秘转学生夜出现在小樱的班上",
+                "script": "小樱走在樱花飘落的校园小路上。教室里，老师介绍新来的转学生夜。夜的眼神碰到小樱的瞬间，小樱心中涌起一种奇妙的感觉。课后，小樱发现自己被一群黑衣人跟踪。",
+                "dialogues": [
+                    {"speaker": "老师", "text": "今天有一位新同学加入我们班", "emotion": "平和"},
+                    {"speaker": "夜", "text": "我叫夜，请多关照", "emotion": "冷淡"},
+                    {"speaker": "小樱", "text": "这个人...我好像在哪里见过？", "emotion": "疑惑"},
+                    {"speaker": "小樱", "text": "你们是谁？为什么跟着我？", "emotion": "紧张"}
+                ],
                 "shots": [
                     {
                         "id": 1,
-                        "type": "远景",
-                        "angle": "俯拍",
-                        "movement": "缓慢推进",
-                        "description": "城市全景，晨光初现，高楼林立",
-                        "action": "镜头从高空缓缓下降",
-                        "emotion": "平静",
+                        "type": "全景",
+                        "angle": "平视",
+                        "movement": "跟拍",
+                        "description": "樱花飘落的校园，小樱走在路上，日系动漫风格的清新画面",
+                        "action": "小樱抬头看樱花，微笑",
+                        "dialogue": "小樱：又是樱花盛开的季节呢",
+                        "emotion": "温馨",
                         "duration": 5,
                         "transition": "淡入"
                     },
                     {
                         "id": 2,
-                        "type": "全景",
+                        "type": "近景",
                         "angle": "平视",
-                        "movement": "跟拍",
-                        "description": "主角背着双肩包走在人群中",
-                        "action": "快步前行，低头看手机",
-                        "emotion": "匆忙",
+                        "movement": "推",
+                        "description": "教室内，老师介绍新同学，夜站在黑板前，画面聚焦他的眼神",
+                        "action": "夜的视线转向小樱",
+                        "dialogue": "夜：我叫夜，请多关照",
+                        "emotion": "好奇",
+                        "duration": 6,
+                        "transition": "硬切"
+                    },
+                    {
+                        "id": 3,
+                        "type": "特写",
+                        "angle": "平视",
+                        "movement": "固定",
+                        "description": "小樱的脸部特写，她的眼神中闪过惊讶和困惑",
+                        "action": "小樱微微皱眉，手不由自主地握紧",
+                        "dialogue": "小樱：这个人...我好像在哪里见过？",
+                        "emotion": "疑惑",
                         "duration": 4,
                         "transition": "硬切"
+                    },
+                    {
+                        "id": 4,
+                        "type": "中景",
+                        "angle": "平视",
+                        "movement": "跟拍",
+                        "description": "放学后，小樱被黑衣人跟踪，日系动漫的紧张氛围",
+                        "action": "黑衣人逼近小樱",
+                        "dialogue": "小樱：你们是谁？为什么跟着我？",
+                        "emotion": "紧张",
+                        "duration": 5,
+                        "transition": "硬切"
+                    }
+                ]
+            },
+            {
+                "episode_number": 2,
+                "title": "觉醒的力量",
+                "location": "学校后山",
+                "environment": "夕阳下的山丘，金色光辉洒满画面，日系动漫的浪漫场景",
+                "time": "黄昏",
+                "mood": "紧张与感动",
+                "conflict": "黑衣人围攻小樱，她的魔法力量首次觉醒",
+                "description": "夜在关键时刻出手相救，小樱发现自己的特殊力量",
+                "script": "黑衣人围住小樱。危机时刻夜突然出现击退了黑衣人。小樱的魔法力量意外觉醒，周围绽放出耀眼的光芒。夜向震惊的小樱解释了一切。",
+                "dialogues": [
+                    {"speaker": "夜", "text": "退下，她是受暗影议会保护的人", "emotion": "威严"},
+                    {"speaker": "小樱", "text": "夜？！你到底是什么人？", "emotion": "震惊"},
+                    {"speaker": "夜", "text": "我是暗影守卫，而你是我们一直在寻找的'光之继承者'", "emotion": "认真"},
+                    {"speaker": "小樱", "text": "光之...继承者？", "emotion": "迷茫"}
+                ],
+                "shots": [
+                    {
+                        "id": 1,
+                        "type": "中景",
+                        "angle": "仰拍",
+                        "movement": "推",
+                        "description": "黑衣人包围小樱，她孤立无援地站在夕阳下的山丘上",
+                        "action": "黑衣人缓缓逼近",
+                        "emotion": "紧张",
+                        "duration": 5,
+                        "transition": "硬切"
+                    },
+                    {
+                        "id": 2,
+                        "type": "近景",
+                        "angle": "平视",
+                        "movement": "跟拍",
+                        "description": "夜从高处跳下挡在小樱身前，暗影风衣随风飘扬",
+                        "action": "夜单手挡开黑衣人",
+                        "dialogue": "夜：退下，她是受暗影议会保护的人",
+                        "emotion": "酷",
+                        "duration": 5,
+                        "transition": "硬切"
+                    },
+                    {
+                        "id": 3,
+                        "type": "特写",
+                        "angle": "平视",
+                        "movement": "固定-拉",
+                        "description": "小樱的身体周围开始绽放粉色光芒，魔法纹路浮现",
+                        "action": "小樱惊讶地看着自己的双手发光",
+                        "dialogue": "小樱：这是...什么力量？",
+                        "emotion": "震惊",
+                        "duration": 6,
+                        "transition": "叠化"
+                    },
+                    {
+                        "id": 4,
+                        "type": "近景",
+                        "angle": "平视",
+                        "movement": "固定",
+                        "description": "夜向小樱单膝跪下，夕阳给他们镀上金色光辉",
+                        "action": "夜单膝跪地",
+                        "dialogue": "夜：我是暗影守卫，而你是我们一直在寻找的'光之继承者'",
+                        "emotion": "感动",
+                        "duration": 4,
+                        "transition": "淡出"
                     }
                 ]
             }

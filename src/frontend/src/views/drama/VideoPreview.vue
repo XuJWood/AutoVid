@@ -5,7 +5,7 @@
       <div class="flex items-center justify-between mb-8">
         <div>
           <h1 class="text-2xl font-bold font-headline tracking-tight">视频预览</h1>
-          <p class="text-sm text-on-surface-variant mt-1">预览和导出完整视频</p>
+          <p class="text-sm text-on-surface-variant mt-1">预览和下载每集视频</p>
         </div>
         <div class="flex gap-3">
           <router-link
@@ -13,16 +13,8 @@
             class="flex items-center gap-2 bg-surface-container px-4 py-2 rounded-full text-sm font-medium hover:bg-surface-container-high transition-colors"
           >
             <span class="material-symbols-outlined text-sm">arrow_back</span>
-            返回分镜
+            返回剧集编辑
           </router-link>
-          <button
-            @click="exportVideo"
-            :disabled="!canExport || exporting"
-            class="flex items-center gap-2 bg-primary text-on-primary px-4 py-2 rounded-full text-sm font-bold hover:brightness-95 transition-all disabled:opacity-50"
-          >
-            <span class="material-symbols-outlined text-sm">{{ exporting ? 'sync' : 'download' }}</span>
-            {{ exporting ? '导出中...' : '导出视频' }}
-          </button>
         </div>
       </div>
 
@@ -32,7 +24,7 @@
           <div class="flex items-center gap-6">
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-blue-600">videocam</span>
-              <span class="text-sm"><strong>{{ completedVideos }}</strong> / {{ totalShots }} 视频已生成</span>
+              <span class="text-sm"><strong>{{ completedVideos }}</strong> / {{ totalEpisodes }} 集视频已生成</span>
             </div>
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-primary">schedule</span>
@@ -51,8 +43,14 @@
         </div>
       </div>
 
+      <!-- Loading State -->
+      <div v-if="loading" class="bg-surface-container-lowest rounded-lg p-12 text-center">
+        <span class="material-symbols-outlined text-4xl text-primary animate-spin mb-3">autorenew</span>
+        <p class="text-sm text-on-surface-variant">正在加载剧集数据...</p>
+      </div>
+
       <!-- Main Content -->
-      <div class="grid grid-cols-12 gap-6">
+      <div v-else class="grid grid-cols-12 gap-6">
         <!-- Left: Video Player -->
         <div class="col-span-12 lg:col-span-8">
           <div class="bg-surface-container-lowest rounded-lg overflow-hidden shadow-sm">
@@ -61,7 +59,7 @@
               <video
                 v-if="currentVideo"
                 ref="mainVideo"
-                :src="currentVideo.video_url"
+                :src="toPlayableUrl(currentVideo.video_url)"
                 class="w-full h-full object-contain"
                 controls
                 @ended="onVideoEnded"
@@ -69,7 +67,7 @@
               <div v-else class="w-full h-full flex items-center justify-center">
                 <div class="text-center text-white/60">
                   <span class="material-symbols-outlined text-6xl mb-2">play_circle</span>
-                  <p class="text-sm">选择一个镜头开始预览</p>
+                  <p class="text-sm">选择一集开始预览</p>
                 </div>
               </div>
 
@@ -77,8 +75,7 @@
               <div v-if="currentVideo" class="absolute bottom-4 left-4 right-4 bg-black/60 text-white px-3 py-2 rounded">
                 <div class="flex items-center justify-between">
                   <div>
-                    <span class="text-xs font-bold">场景 {{ currentVideo.scene_index + 1 }} · 镜头 {{ currentVideo.shot_index + 1 }}</span>
-                    <p class="text-xs opacity-80 line-clamp-1">{{ currentVideo.description }}</p>
+                    <span class="text-xs font-bold">第{{ currentVideo.episode_number }}集 · {{ currentVideo.title || '未命名' }}</span>
                   </div>
                   <span class="text-xs font-bold">{{ currentVideo.duration }}s</span>
                 </div>
@@ -86,7 +83,7 @@
             </div>
 
             <!-- Playback Controls -->
-            <div v-if="storyboards.length > 0" class="p-4 border-t border-surface-container">
+            <div v-if="episodes.length > 0" class="p-4 border-t border-surface-container">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <button
@@ -104,127 +101,91 @@
                   </button>
                   <button
                     @click="playNext"
-                    :disabled="currentIndex >= completedStoryboards.length - 1"
+                    :disabled="currentIndex >= completedEpisodes.length - 1"
                     class="p-2 rounded-full hover:bg-surface-container transition-colors disabled:opacity-30"
                   >
                     <span class="material-symbols-outlined">skip_next</span>
                   </button>
                 </div>
-                <div class="flex items-center gap-4 text-sm text-on-surface-variant">
-                  <span>{{ currentIndex + 1 }} / {{ completedStoryboards.length }}</span>
-                  <span v-if="isPlayingAll" class="text-primary font-bold">连续播放中</span>
+                <div class="flex items-center gap-4">
+                  <span class="text-sm text-on-surface-variant">{{ currentIndex + 1 }} / {{ completedEpisodes.length }}</span>
+                  <span v-if="isPlayingAll" class="text-primary text-sm font-bold">连续播放中</span>
+                  <a
+                    v-if="currentVideo?.video_url"
+                    :href="toPlayableUrl(currentVideo.video_url)"
+                    download
+                    class="flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-primary/10 text-primary rounded-full hover:bg-primary/20 transition-colors"
+                  >
+                    <span class="material-symbols-outlined text-sm">download</span>
+                    下载本集
+                  </a>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Export Options -->
-          <div class="bg-surface-container-low rounded-lg p-4 mt-4">
-            <h3 class="font-bold text-sm mb-3">导出选项</h3>
-            <div class="grid grid-cols-3 gap-4">
-              <div>
-                <label class="text-xs text-on-surface-variant block mb-1">分辨率</label>
-                <select v-model="exportOptions.resolution" class="w-full bg-surface-container-lowest border border-surface-container rounded px-3 py-2 text-sm">
-                  <option value="1080p">1080p (Full HD)</option>
-                  <option value="720p">720p (HD)</option>
-                  <option value="480p">480p (SD)</option>
-                </select>
-              </div>
-              <div>
-                <label class="text-xs text-on-surface-variant block mb-1">帧率</label>
-                <select v-model="exportOptions.fps" class="w-full bg-surface-container-lowest border border-surface-container rounded px-3 py-2 text-sm">
-                  <option value="30">30 FPS</option>
-                  <option value="24">24 FPS (电影)</option>
-                  <option value="60">60 FPS</option>
-                </select>
-              </div>
-              <div>
-                <label class="text-xs text-on-surface-variant block mb-1">格式</label>
-                <select v-model="exportOptions.format" class="w-full bg-surface-container-lowest border border-surface-container rounded px-3 py-2 text-sm">
-                  <option value="mp4">MP4</option>
-                  <option value="mov">MOV</option>
-                  <option value="webm">WebM</option>
-                </select>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Right: Timeline -->
+        <!-- Right: Episode List -->
         <div class="col-span-12 lg:col-span-4">
           <div class="bg-surface-container-lowest rounded-lg shadow-sm">
             <div class="p-4 border-b border-surface-container">
-              <h3 class="font-bold text-sm">时间线</h3>
+              <h3 class="font-bold text-sm">剧集列表</h3>
             </div>
 
             <div class="max-h-[600px] overflow-y-auto custom-scrollbar">
-              <div v-if="groupedStoryboards.length > 0" class="divide-y divide-surface-container">
-                <div v-for="group in groupedStoryboards" :key="group.sceneIndex" class="p-4">
-                  <h4 class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-3">
-                    场景 {{ group.sceneIndex + 1 }}
-                  </h4>
-                  <div class="space-y-2">
-                    <button
-                      v-for="shot in group.shots"
-                      :key="shot.id"
-                      @click="selectVideo(shot)"
-                      :disabled="!shot.video_url"
-                      class="w-full flex items-center gap-3 p-2 rounded-lg transition-colors"
-                      :class="[
-                        currentVideo?.id === shot.id ? 'bg-primary/10 border border-primary/30' : 'hover:bg-surface-container-low',
-                        !shot.video_url ? 'opacity-50 cursor-not-allowed' : ''
-                      ]"
-                    >
-                      <!-- Thumbnail -->
-                      <div class="w-16 h-10 bg-surface-container rounded overflow-hidden flex-shrink-0">
-                        <img
-                          v-if="shot.image_url"
-                          :src="shot.image_url"
-                          class="w-full h-full object-cover"
-                        />
-                        <span v-else class="material-symbols-outlined text-sm text-on-surface-variant">image</span>
-                      </div>
-
-                      <!-- Info -->
-                      <div class="flex-1 text-left">
-                        <div class="text-xs font-bold">镜头 {{ shot.shot_index + 1 }}</div>
-                        <div class="text-xs text-on-surface-variant line-clamp-1">{{ shot.description }}</div>
-                      </div>
-
-                      <!-- Status -->
-                      <div class="flex-shrink-0">
-                        <span v-if="shot.video_url" class="material-symbols-outlined text-sm text-green-600">check_circle</span>
-                        <span v-else-if="shot.status === 'processing'" class="material-symbols-outlined text-sm text-yellow-600 animate-spin">sync</span>
-                        <span v-else class="material-symbols-outlined text-sm text-on-surface-variant opacity-50">pending</span>
-                      </div>
-                    </button>
+              <div v-if="sortedEpisodes.length > 0" class="divide-y divide-surface-container p-4">
+                <button
+                  v-for="ep in sortedEpisodes"
+                  :key="ep.id"
+                  @click="selectVideo(ep)"
+                  :disabled="!ep.video_url"
+                  class="w-full flex items-center gap-3 p-3 rounded-lg transition-colors mb-2"
+                  :class="[
+                    currentVideo?.id === ep.id ? 'bg-primary/10 border border-primary/30' : 'hover:bg-surface-container-low',
+                    !ep.video_url ? 'opacity-50 cursor-not-allowed' : ''
+                  ]"
+                >
+                  <!-- Thumbnail -->
+                  <div class="w-20 h-12 bg-surface-container rounded overflow-hidden flex-shrink-0">
+                    <img
+                      v-if="ep.image_url"
+                      :src="toPlayableUrl(ep.image_url)"
+                      class="w-full h-full object-cover"
+                    />
+                    <span v-else class="material-symbols-outlined text-sm text-on-surface-variant flex items-center justify-center h-full">movie</span>
                   </div>
-                </div>
+
+                  <!-- Info -->
+                  <div class="flex-1 text-left">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded">第{{ ep.episode_number }}集</span>
+                    </div>
+                    <div class="text-sm font-bold mt-0.5">{{ ep.title || '未命名' }}</div>
+                    <div class="text-xs text-on-surface-variant">{{ ep.duration }}s</div>
+                  </div>
+
+                  <!-- Status -->
+                  <div class="flex-shrink-0 text-right">
+                    <span v-if="ep.video_url" class="material-symbols-outlined text-sm text-green-600">check_circle</span>
+                    <span v-else-if="ep.status === 'processing'" class="material-symbols-outlined text-sm text-yellow-600 animate-spin">sync</span>
+                    <span v-else class="material-symbols-outlined text-sm text-on-surface-variant opacity-50">pending</span>
+                    <a
+                      v-if="ep.video_url"
+                      :href="toPlayableUrl(ep.video_url)"
+                      download
+                      class="block text-xs text-primary mt-1 hover:underline"
+                      @click.stop
+                    >
+                      下载
+                    </a>
+                  </div>
+                </button>
               </div>
 
               <div v-else class="p-8 text-center text-on-surface-variant">
                 <span class="material-symbols-outlined text-4xl opacity-50 mb-2">movie_filter</span>
-                <p class="text-sm">还没有分镜数据</p>
+                <p class="text-sm">还没有剧集数据</p>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Export Progress Modal -->
-      <div v-if="exporting" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div class="bg-surface rounded-lg p-6 max-w-md w-full mx-4">
-          <h3 class="font-bold text-lg mb-4">正在导出视频</h3>
-          <div class="space-y-3">
-            <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-primary animate-spin">sync</span>
-              <span class="text-sm">{{ exportProgress }}</span>
-            </div>
-            <div class="w-full bg-surface-container-high rounded-full h-2">
-              <div
-                class="bg-primary h-2 rounded-full transition-all"
-                :style="{ width: exportPercent + '%' }"
-              ></div>
             </div>
           </div>
         </div>
@@ -241,91 +202,74 @@ import { storyboardApi } from '@/api/storyboard'
 const route = useRoute()
 const projectId = route.params.id
 
-const storyboards = ref([])
+const episodes = ref([])
+const loading = ref(true)
 const currentVideo = ref(null)
 const currentIndex = ref(0)
 const isPlayingAll = ref(false)
 const mainVideo = ref(null)
 
-const exporting = ref(false)
-const exportPercent = ref(0)
-const exportProgress = ref('准备导出...')
+function toPlayableUrl(url) {
+  if (!url) return null
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  const idx = url.indexOf('/media/')
+  if (idx !== -1) return url.substring(idx)
+  return url
+}
 
-const exportOptions = ref({
-  resolution: '1080p',
-  fps: '30',
-  format: 'mp4'
+const sortedEpisodes = computed(() => {
+  return [...episodes.value].sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0))
 })
 
-// Computed
-const completedStoryboards = computed(() => {
-  return storyboards.value.filter(sb => sb.video_url)
+const completedEpisodes = computed(() => {
+  return sortedEpisodes.value.filter(e => e.video_url)
 })
 
-const totalShots = computed(() => storyboards.value.length)
-
-const completedVideos = computed(() => completedStoryboards.value.length)
+const totalEpisodes = computed(() => episodes.value.length)
+const completedVideos = computed(() => completedEpisodes.value.length)
 
 const totalDuration = computed(() => {
-  return storyboards.value.reduce((sum, sb) => sum + (sb.duration || 0), 0)
+  return episodes.value.reduce((sum, e) => sum + (e.duration || 0), 0)
 })
 
 const progressPercent = computed(() => {
-  if (totalShots.value === 0) return 0
-  return Math.round((completedVideos.value / totalShots.value) * 100)
+  if (totalEpisodes.value === 0) return 0
+  return Math.round((completedVideos.value / totalEpisodes.value) * 100)
 })
 
-const canExport = computed(() => {
-  return completedVideos.value > 0 && completedVideos.value === totalShots.value
-})
-
-const groupedStoryboards = computed(() => {
-  const groups = {}
-  storyboards.value.forEach(sb => {
-    const key = sb.scene_index
-    if (!groups[key]) {
-      groups[key] = {
-        sceneIndex: sb.scene_index,
-        shots: []
-      }
-    }
-    groups[key].shots.push(sb)
-  })
-  return Object.values(groups).sort((a, b) => a.sceneIndex - b.sceneIndex)
-})
-
-// Methods
-const loadStoryboards = async () => {
+const loadEpisodes = async () => {
+  loading.value = true
   try {
     const res = await storyboardApi.getByProject(projectId)
-    storyboards.value = res.data
-    // Auto-select first completed video
-    if (completedStoryboards.value.length > 0 && !currentVideo.value) {
-      selectVideo(completedStoryboards.value[0])
+    episodes.value = res.data
+    if (completedEpisodes.value.length > 0 && !currentVideo.value) {
+      selectVideo(completedEpisodes.value[0])
     }
   } catch (error) {
-    console.error('Failed to load storyboards:', error)
+    console.error('Failed to load episodes:', error)
+  } finally {
+    loading.value = false
   }
 }
 
-const selectVideo = (shot) => {
-  if (!shot.video_url) return
-  currentVideo.value = shot
-  currentIndex.value = completedStoryboards.value.findIndex(s => s.id === shot.id)
+const selectVideo = (ep) => {
+  if (!ep.video_url) return
+  currentVideo.value = ep
+  currentIndex.value = completedEpisodes.value.findIndex(e => e.id === ep.id)
   isPlayingAll.value = false
 }
 
 const playPrevious = () => {
   if (currentIndex.value > 0) {
     currentIndex.value--
-    currentVideo.value = completedStoryboards.value[currentIndex.value]
+    currentVideo.value = completedEpisodes.value[currentIndex.value]
   }
 }
 
 const playNext = () => {
-  if (currentIndex.value < completedStoryboards.value.length - 1) {
+  if (currentIndex.value < completedEpisodes.value.length - 1) {
     currentIndex.value++
-    currentVideo.value = completedStoryboards.value[currentIndex.value]
+    currentVideo.value = completedEpisodes.value[currentIndex.value]
   }
 }
 
@@ -347,48 +291,7 @@ const onVideoEnded = () => {
   }
 }
 
-const exportVideo = async () => {
-  if (!canExport.value) return
-
-  exporting.value = true
-  exportPercent.value = 0
-  exportProgress.value = '正在合并视频片段...'
-
-  // Simulate export progress
-  const interval = setInterval(() => {
-    if (exportPercent.value < 90) {
-      exportPercent.value += 10
-    }
-  }, 500)
-
-  try {
-    // TODO: Call backend export API
-    // const res = await api.post(`/projects/${projectId}/export`, exportOptions.value)
-
-    // Simulate export completion
-    await new Promise(resolve => setTimeout(resolve, 5000))
-
-    exportPercent.value = 100
-    exportProgress.value = '导出完成！'
-
-    setTimeout(() => {
-      exporting.value = false
-      // TODO: Trigger download
-      alert('视频导出成功！下载将自动开始。')
-    }, 1000)
-
-  } catch (error) {
-    console.error('Failed to export video:', error)
-    exportProgress.value = '导出失败：' + error.message
-    setTimeout(() => {
-      exporting.value = false
-    }, 2000)
-  } finally {
-    clearInterval(interval)
-  }
-}
-
-onMounted(loadStoryboards)
+onMounted(loadEpisodes)
 
 onUnmounted(() => {
   isPlayingAll.value = false
@@ -402,11 +305,5 @@ onUnmounted(() => {
 }
 .animate-spin {
   animation: spin 1s linear infinite;
-}
-.line-clamp-1 {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 </style>

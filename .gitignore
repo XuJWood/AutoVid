@@ -46,12 +46,14 @@ Thumbs.db
 logs/
 *.log
 
-# Media files (generated videos)
+# Media files (generated content)
 media/output/
 media/temp/
+media/projects/
 *.mp4
 *.avi
 *.mov
+*.wav
 !media/.gitkeep
 
 # API Keys & Secrets
