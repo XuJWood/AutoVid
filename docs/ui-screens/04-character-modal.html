@@ -1,0 +1,271 @@
+<!-- 角色生成 - 弹窗设计 -->
+<!DOCTYPE html>
+
+<html lang="zh-Hans"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AutoVid - 角色生成</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#f6f6fb",
+                    "on-error": "#ffefef",
+                    "surface-container": "#e7e8ee",
+                    "primary-fixed": "#9695ff",
+                    "outline": "#75777b",
+                    "on-secondary-container": "#00468e",
+                    "primary-dim": "#3d38c5",
+                    "surface-dim": "#d2d4db",
+                    "outline-variant": "#acadb1",
+                    "secondary-fixed": "#bcd2ff",
+                    "primary-container": "#9695ff",
+                    "error": "#b41340",
+                    "tertiary": "#973773",
+                    "surface-variant": "#dbdde3",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-fixed": "#000000",
+                    "on-tertiary-fixed-variant": "#6c104f",
+                    "on-surface-variant": "#5a5b60",
+                    "on-primary": "#f4f1ff",
+                    "inverse-surface": "#0c0e12",
+                    "primary": "#4a47d2",
+                    "on-secondary": "#eff2ff",
+                    "on-background": "#2d2f33",
+                    "tertiary-dim": "#882a67",
+                    "secondary-fixed-dim": "#a5c5ff",
+                    "secondary-container": "#bcd2ff",
+                    "tertiary-fixed-dim": "#ed7ebe",
+                    "error-container": "#f74b6d",
+                    "on-error-container": "#510017",
+                    "primary-fixed-dim": "#8686ff",
+                    "error-dim": "#a70138",
+                    "on-tertiary-fixed": "#350025",
+                    "background": "#f6f6fb",
+                    "tertiary-container": "#fd8bcc",
+                    "inverse-primary": "#8382ff",
+                    "inverse-on-surface": "#9c9da1",
+                    "on-primary-container": "#10007f",
+                    "secondary-dim": "#004e9d",
+                    "surface-bright": "#f6f6fb",
+                    "on-secondary-fixed": "#00336b",
+                    "surface-container-low": "#f0f0f6",
+                    "surface-container-highest": "#dbdde3",
+                    "surface-container-high": "#e1e2e8",
+                    "tertiary-fixed": "#fd8bcc",
+                    "on-secondary-fixed-variant": "#004f9f",
+                    "surface-tint": "#4a47d2",
+                    "on-tertiary-container": "#610246",
+                    "on-tertiary": "#ffeff4",
+                    "secondary": "#005ab2",
+                    "on-surface": "#2d2f33",
+                    "on-primary-fixed-variant": "#16009b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen">
+<!-- Top Navigation Anchor (Shared Component Mapping) -->
+<nav class="fixed top-0 w-full z-50 bg-[#f6f6fb] dark:bg-slate-900 bg-opacity-80 backdrop-blur-xl flex justify-between items-center h-16 px-8 w-full">
+<div class="text-xl font-bold tracking-tight text-[#4a47d2] dark:text-[#5e5ce6]">AutoVid</div>
+<div class="hidden md:flex items-center gap-8 font-manrope text-sm font-medium">
+<a class="text-[#4a47d2] dark:text-[#5e5ce6] border-b-2 border-[#4a47d2] pb-1" href="#">短剧创作</a>
+<a class="text-[#5a5b60] dark:text-slate-400 hover:text-[#4a47d2] transition-colors" href="#">视频生成</a>
+<a class="text-[#5a5b60] dark:text-slate-400 hover:text-[#4a47d2] transition-colors" href="#">我的项目</a>
+<a class="text-[#5a5b60] dark:text-slate-400 hover:text-[#4a47d2] transition-colors" href="#">角色库</a>
+<a class="text-[#5a5b60] dark:text-slate-400 hover:text-[#4a47d2] transition-colors" href="#">模板中心</a>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:scale-95 duration-200">settings</span>
+<div class="w-8 h-8 rounded-full bg-primary-container overflow-hidden">
+<img alt="User Avatar" data-alt="close-up portrait of a young professional user with a friendly expression and soft studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxbSjGXJZFpBkoWU6MNnGRklEA_idNJD3BDczwcCMKR9UP8389Mb0Flaz1uKL90OHCkkNxpANDZzQcwRtkubGvHl0dtMQvZj5YBb6MtAz3sqsl_xSkp5k_GZ4haiiHxU5ffModYkuXjilijrnrMBC06rSVCpbjU3I9rBu7hIFVNFcQEr2-rNUKAMbNar0YngZv-EpIkDN2zH3h7wl0Ap94CcsDv8tdr-zGMMLmvsh4g7-wZAZPyRAGEhjh3RkcwB4Qw1ivoSqnw2I"/>
+</div>
+</div>
+</nav>
+<!-- Background Workspace (Simulated Content) -->
+<main class="pt-24 px-8 max-w-7xl mx-auto grid grid-cols-12 gap-8 opacity-40 select-none pointer-events-none">
+<!-- Sidebar Navigation (Shared Component Mapping) -->
+<aside class="col-span-3 h-[calc(100vh-120px)] bg-[#f0f0f6] dark:bg-slate-800/50 rounded-lg flex flex-col py-6 px-4 gap-2 border-r border-[#5a5b60]/10">
+<div class="mb-6 px-2">
+<h2 class="text-lg font-semibold text-[#4a47d2]">设置中心</h2>
+<p class="text-xs text-on-surface-variant">管理您的AI偏好</p>
+</div>
+<div class="bg-white dark:bg-slate-700 text-[#4a47d2] font-bold rounded-xl px-4 py-3 flex items-center gap-3">
+<span class="material-symbols-outlined">settings_input_component</span>
+<span class="font-manrope text-sm">模型配置</span>
+</div>
+<div class="text-[#5a5b60] dark:text-slate-400 hover:bg-[#ffffff]/50 px-4 py-3 rounded-xl flex items-center gap-3 transition-all">
+<span class="material-symbols-outlined">terminal</span>
+<span class="font-manrope text-sm">提示词模板</span>
+</div>
+</aside>
+<!-- Main Editor Area -->
+<div class="col-span-9 space-y-6">
+<div class="bg-surface-container-lowest p-8 rounded-lg">
+<h1 class="text-3xl font-extrabold mb-4">剧本创作: 霓虹觉醒</h1>
+<div class="space-y-4">
+<div class="h-4 w-3/4 bg-surface-container rounded-full"></div>
+<div class="h-4 w-1/2 bg-surface-container rounded-full"></div>
+<div class="h-32 w-full bg-surface-container-low rounded-lg"></div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-6">
+<div class="aspect-video bg-surface-container-low rounded-lg"></div>
+<div class="aspect-video bg-surface-container-low rounded-lg"></div>
+</div>
+</div>
+</main>
+<!-- Modal Overlay -->
+<div class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-on-background/20 backdrop-blur-md">
+<!-- Modal Content -->
+<div class="bg-surface-container-lowest w-full max-w-5xl max-h-[921px] overflow-hidden rounded-xl shadow-[0_24px_64px_rgba(74,71,210,0.15)] flex flex-col">
+<!-- Modal Header -->
+<header class="px-8 py-6 flex justify-between items-center border-b border-outline-variant/10">
+<div>
+<h2 class="text-2xl font-bold text-on-surface">角色生成</h2>
+<p class="text-sm text-on-surface-variant mt-1 font-body">根据剧本需求定制独一无二的AI视觉形象</p>
+</div>
+<button class="p-2 hover:bg-surface-container rounded-full transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</header>
+<div class="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-5 h-full">
+<!-- Left: Configuration Side -->
+<div class="lg:col-span-2 bg-surface-container-low p-8 space-y-8">
+<!-- Description Input -->
+<div class="space-y-3">
+<label class="text-sm font-bold text-primary tracking-wide">基本描述</label>
+<div class="relative">
+<textarea class="w-full bg-surface-container-lowest border-none rounded-lg p-4 text-sm focus:ring-2 focus:ring-primary h-32 resize-none placeholder:text-outline-variant" placeholder="描述您的角色... (例如: 一个身着赛博朋克风格皮衣的冷静女侦探，眼神犀利，背景是雨后的霓虹都市)"></textarea>
+<div class="absolute bottom-3 right-3 text-[10px] text-outline-variant font-medium">0 / 500</div>
+</div>
+</div>
+<!-- Style Selection -->
+<div class="space-y-3">
+<label class="text-sm font-bold text-primary tracking-wide">视觉风格</label>
+<div class="grid grid-cols-3 gap-3">
+<button class="flex flex-col items-center gap-2 p-3 rounded-lg bg-primary text-on-primary ring-2 ring-primary/20">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">camera</span>
+<span class="text-xs font-medium">写实</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-3 rounded-lg bg-surface-container-lowest text-on-surface-variant hover:bg-white transition-all border border-outline-variant/5">
+<span class="material-symbols-outlined">palette</span>
+<span class="text-xs font-medium">动漫</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-3 rounded-lg bg-surface-container-lowest text-on-surface-variant hover:bg-white transition-all border border-outline-variant/5">
+<span class="material-symbols-outlined">movie</span>
+<span class="text-xs font-medium">电影</span>
+</button>
+</div>
+</div>
+<!-- Advanced Fields -->
+<div class="space-y-4 pt-4 border-t border-outline-variant/10">
+<div class="flex justify-between items-center">
+<span class="text-xs font-bold text-on-surface-variant uppercase">高级配置</span>
+<span class="material-symbols-outlined text-sm text-outline-variant">expand_more</span>
+</div>
+<div class="space-y-3">
+<div>
+<label class="text-[11px] font-bold text-outline uppercase block mb-1">服装细节</label>
+<input class="w-full bg-surface-container-lowest border-none rounded-full px-4 py-2 text-xs" placeholder="例如: 战术背心, 黑色长袍" type="text"/>
+</div>
+<div>
+<label class="text-[11px] font-bold text-outline uppercase block mb-1">面部特征</label>
+<input class="w-full bg-surface-container-lowest border-none rounded-full px-4 py-2 text-xs" placeholder="例如: 蓝眼睛, 刀疤, 银发" type="text"/>
+</div>
+</div>
+</div>
+<button class="w-full bg-primary text-white font-bold py-4 rounded-full flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
+<span class="material-symbols-outlined text-xl">auto_awesome</span>
+                        重新生成
+                    </button>
+</div>
+<!-- Right: Results Grid -->
+<div class="lg:col-span-3 p-8 bg-surface">
+<div class="flex justify-between items-end mb-6">
+<h3 class="font-bold text-lg">生成结果</h3>
+<span class="text-xs text-outline-variant font-medium">基于最新提示词生成了 4 个版本</span>
+</div>
+<!-- Grid Results -->
+<div class="grid grid-cols-2 gap-6">
+<!-- Result 1 -->
+<div class="group relative aspect-[3/4] bg-surface-container-high rounded-lg overflow-hidden cursor-pointer ring-offset-4 ring-primary transition-all hover:ring-2">
+<img alt="Generated Character 1" class="w-full h-full object-cover" data-alt="cinematic portrait of a futuristic female detective with sharp gaze, silver hair, wearing high-tech leather jacket in a rainy neon city background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQ6Zy8b_AAn5_LvMp5gcV1zzt-LFOQOdXeuIzSjhMKbVLv6uDnO6E94fhBDMsDi-UmoDh-vFerpqlpr7B6tVVZJt8u09V2BTVZX7q4MWAIdAZ2U1wyrZet4fvkzNBI98l7Yic1EJB7X7ppZ8PosgisNev0fIVgGV1kwLjtZ86lA0UcIl1UUXU-4y_3x3gInVgVe1yLCUnU9Se0lYzApTtU3xLnCFx21MjAg3Q3dIBpCR4aPJ0Xr9MVUt4GtGT5bEjJkj9nBk6AqlU"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
+<div class="flex justify-between items-center">
+<span class="text-white text-xs font-bold">版本 A</span>
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+</div>
+<!-- Result 2 -->
+<div class="group relative aspect-[3/4] bg-surface-container-high rounded-lg overflow-hidden cursor-pointer transition-all">
+<img alt="Generated Character 2" class="w-full h-full object-cover" data-alt="realistic close-up portrait of a character with mysterious expression, dramatic side lighting, focused on eyes and facial details with soft cinematic blur" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmUf7SX_f31sZjDLXLGWyA4yQRpB1MYhGCuGcMl5ehsoytxkomfAvp1uxch7yHa1EaUlyqiRF6FEEx34jdOCUeJnNitieSAr6P90XHMO3GA-R5UltGsVmZQp8ziZ-3-Ac3rjScnUTuhoC1pD8ooU-UsJUiyU5jD1xxgTlHjvcVnDuxcYhj8roCPXHTdAJ_Kl3AOGkZ_iqazTsnnP65azJbJVcaOQDoeVOewJAgd1BosloB9P8ddVrqXMCVla3C9f_PQ6s4-SA3mko"/>
+<div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</div>
+<!-- Result 3 -->
+<div class="group relative aspect-[3/4] bg-surface-container-high rounded-lg overflow-hidden cursor-pointer transition-all">
+<img alt="Generated Character 3" class="w-full h-full object-cover" data-alt="low angle cinematic shot of a character in tactical gear standing under heavy rainfall with neon lights reflecting on wet surfaces" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLNZZvyMOY89L9l6KTpOuXsRckDZWmg2xZDE1IZMGlD9wNpQ_xj-IRQjBUMB2U-vuuyzLDueoZCA0hlDMVZ4yYd7NHxEIoWE2IDBw9HjlOHniIqiWuUbGRjsUaRjWAhRnvhczbPHLjhVy936M3VztOKKK9rNLhJtf7Yhc-QL6dh41IVuseXBgxKFBM7RVkdgrZVbmydDrG_rc3m5g8ghjVlshr-zGd2kwj_VpmSlJgg4MZm_sn2iyBmPE4w9OQlJRT2EEmyKtMk9g"/>
+<div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</div>
+<!-- Result 4 -->
+<div class="group relative aspect-[3/4] bg-surface-container-high rounded-lg overflow-hidden cursor-pointer transition-all">
+<img alt="Generated Character 4" class="w-full h-full object-cover" data-alt="artistic profile shot of a character with silver hair and glowing cybernetic eye implants, ethereal lighting, high contrast" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYJKsG_jXKU1sTteTIqVSJZsCsdRQwTlJ-8W1Z9UAbhwwvtxeI2XGJ77kI7taxAdZzi6gw4lBDtV6ZdwR-K5N7KF3-eKJvtZdGVXmw8t98O8AxjyERtMYiuTQJC-O2K_XgLGwMLKsOKJLWZmq8q-lbLZLTPs6T5aGpfu_SeAc2K8Amk9p19J6u5t0zYOPSIpD7oFhznPzHByTttzsy4MzvNO056Eat3wwoPJoRQUbH1BIp6NvMeUtST1FCeAz7h5CYxiP5Kpn3wkQ"/>
+<div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Modal Footer -->
+<footer class="px-8 py-6 bg-surface-container-lowest border-t border-outline-variant/10 flex justify-end gap-4">
+<button class="px-8 py-3 rounded-full text-on-surface-variant font-bold hover:bg-surface-container transition-all">取消</button>
+<button class="px-10 py-3 rounded-full bg-primary text-white font-bold shadow-lg shadow-primary/10 hover:scale-[1.02] transition-all">确认选择</button>
+</footer>
+</div>
+</div>
+<!-- Bottom Nav Shell (Shared Component Mapping) -->
+<div class="fixed bottom-8 w-full flex justify-center z-50">
+<div class="bg-[#ffffff]/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-[#5a5b60]/10 rounded-full px-6 py-3 w-fit min-w-[400px] shadow-[0_12px_40px_rgba(74,71,210,0.1)] flex justify-center">
+<div class="flex items-center gap-2">
+<div class="text-[#5a5b60] px-4 py-2 flex items-center gap-2 hover:bg-[#f0f0f6] dark:hover:bg-slate-800 rounded-full transition-all cursor-pointer">
+<span class="material-symbols-outlined text-lg">auto_awesome</span>
+<span class="font-manrope font-bold text-xs">生成剧本</span>
+</div>
+<div class="bg-[#4a47d2] text-white rounded-full px-6 py-2 flex items-center gap-2 scale-105 active:scale-95 duration-300 cursor-pointer">
+<span class="material-symbols-outlined text-lg">magic_button</span>
+<span class="font-manrope font-bold text-xs">AI 优化</span>
+</div>
+<div class="text-[#5a5b60] px-4 py-2 flex items-center gap-2 hover:bg-[#f0f0f6] dark:hover:bg-slate-800 rounded-full transition-all cursor-pointer">
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+<span class="font-manrope font-bold text-xs">下一步</span>
+</div>
+</div>
+</div>
+</div>
+</body></html>

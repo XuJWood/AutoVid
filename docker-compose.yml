@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: autovid
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/autovid
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./src/backend:/app
+      - ./media:/app/media
+
+  # Celery Worker
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    command: celery -A app.worker worker --loglevel=info
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/autovid
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./src/backend:/app
+      - ./media:/app/media
+
+  # Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./src/frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+  redis_data:

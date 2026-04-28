@@ -1,0 +1,288 @@
+<!-- 设置 - 模型配置 -->
+<!DOCTYPE html>
+
+<html lang="zh-Hans"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AutoVid Settings - Model Configuration</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#f6f6fb",
+                    "on-error": "#ffefef",
+                    "surface-container": "#e7e8ee",
+                    "primary-fixed": "#9695ff",
+                    "outline": "#75777b",
+                    "on-secondary-container": "#00468e",
+                    "primary-dim": "#3d38c5",
+                    "surface-dim": "#d2d4db",
+                    "outline-variant": "#acadb1",
+                    "secondary-fixed": "#bcd2ff",
+                    "primary-container": "#9695ff",
+                    "error": "#b41340",
+                    "tertiary": "#973773",
+                    "surface-variant": "#dbdde3",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary-fixed": "#000000",
+                    "on-tertiary-fixed-variant": "#6c104f",
+                    "on-surface-variant": "#5a5b60",
+                    "on-primary": "#f4f1ff",
+                    "inverse-surface": "#0c0e12",
+                    "primary": "#4a47d2",
+                    "on-secondary": "#eff2ff",
+                    "on-background": "#2d2f33",
+                    "tertiary-dim": "#882a67",
+                    "secondary-fixed-dim": "#a5c5ff",
+                    "secondary-container": "#bcd2ff",
+                    "tertiary-fixed-dim": "#ed7ebe",
+                    "error-container": "#f74b6d",
+                    "on-error-container": "#510017",
+                    "primary-fixed-dim": "#8686ff",
+                    "error-dim": "#a70138",
+                    "on-tertiary-fixed": "#350025",
+                    "background": "#f6f6fb",
+                    "tertiary-container": "#fd8bcc",
+                    "inverse-primary": "#8382ff",
+                    "inverse-on-surface": "#9c9da1",
+                    "on-primary-container": "#10007f",
+                    "secondary-dim": "#004e9d",
+                    "surface-bright": "#f6f6fb",
+                    "on-secondary-fixed": "#00336b",
+                    "surface-container-low": "#f0f0f6",
+                    "surface-container-highest": "#dbdde3",
+                    "surface-container-high": "#e1e2e8",
+                    "tertiary-fixed": "#fd8bcc",
+                    "on-secondary-fixed-variant": "#004f9f",
+                    "surface-tint": "#4a47d2",
+                    "on-tertiary-container": "#610246",
+                    "on-tertiary": "#ffeff4",
+                    "secondary": "#005ab2",
+                    "on-surface": "#2d2f33",
+                    "on-primary-fixed-variant": "#16009b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f6f6fb; }
+        .font-headline { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="text-on-background antialiased overflow-hidden">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 bg-[#f6f6fb] dark:bg-slate-900 bg-opacity-80 backdrop-blur-xl flex justify-between items-center h-16 px-8 w-full">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tight text-[#4a47d2] dark:text-[#5e5ce6] font-headline">AutoVid</span>
+<nav class="hidden md:flex gap-6">
+<a class="font-manrope text-sm font-medium text-[#5a5b60] dark:text-slate-400 hover:text-[#4a47d2] transition-colors" href="#">短剧创作</a>
+<a class="font-manrope text-sm font-medium text-[#5a5b60] dark:text-slate-400 hover:text-[#4a47d2] transition-colors" href="#">视频生成</a>
+<a class="font-manrope text-sm font-medium text-[#5a5b60] dark:text-slate-400 hover:text-[#4a47d2] transition-colors" href="#">我的项目</a>
+<a class="font-manrope text-sm font-medium text-[#5a5b60] dark:text-slate-400 hover:text-[#4a47d2] transition-colors" href="#">角色库</a>
+<a class="font-manrope text-sm font-medium text-[#5a5b60] dark:text-slate-400 hover:text-[#4a47d2] transition-colors" href="#">模板中心</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors p-2">settings</button>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="close-up portrait of a friendly professional man in a minimal studio setting with soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_RpZ6kbI0l-ZMGv1KyFr9eXADErDUeQSeOomeDvxJ7vpOa85AhCcDWZjrFiPsPQ3SV1I9eHpJwS2M_VzR87csc2wKXs4GZQG3dY5ooVN5_sVg8mKgxXdWMgorrGNu-lFVanPjO_yahOwQUXnKENZbu0tZSLVXIYAPNq6tPZ0d8dZXdoMNhZub4uRgn42A8-hB5AqYq1-gdNphiw8DZdlyh9HsaYeVXsho5E1V9gSOmzMeHg15D0rZqSJAj_J0Gh2a0w0nYl0oBX8"/>
+</div>
+</div>
+</header>
+<div class="flex pt-16 h-screen">
+<!-- SideNavBar -->
+<aside class="h-screen w-64 border-r border-[#5a5b60]/10 bg-[#f0f0f6] dark:bg-slate-800/50 flex flex-col py-6 px-4 gap-2 shrink-0">
+<div class="mb-6 px-2">
+<h2 class="text-lg font-semibold text-[#4a47d2] font-headline">设置中心</h2>
+<p class="text-xs text-on-surface-variant opacity-70">管理您的AI偏好</p>
+</div>
+<a class="bg-white dark:bg-slate-700 text-[#4a47d2] font-bold rounded-xl flex items-center gap-3 px-4 py-3 font-manrope text-sm translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings_input_component">settings_input_component</span>
+<span>模型配置</span>
+</a>
+<a class="text-[#5a5b60] dark:text-slate-400 hover:bg-[#ffffff]/50 flex items-center gap-3 px-4 py-3 font-manrope text-sm rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+<span>提示词模板</span>
+</a>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto bg-surface p-8 pb-32">
+<div class="max-w-5xl mx-auto">
+<header class="mb-12">
+<h1 class="text-3xl font-extrabold tracking-tight font-headline text-on-background mb-2">模型配置</h1>
+<p class="text-on-surface-variant">配置您的 AI 引擎接口与生成参数，以获得最佳创作效果。</p>
+</header>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<!-- Text Model Section -->
+<section class="bg-surface-container-lowest p-8 rounded-lg shadow-[0_12px_40px_rgba(74,71,210,0.03)] flex flex-col gap-6">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined text-primary" data-icon="description">description</span>
+</div>
+<h3 class="text-xl font-bold font-headline">文本 (Text)</h3>
+</div>
+<div class="space-y-4">
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">模型提供商</label>
+<select class="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20 appearance-none">
+<option>GPT-4 Turbo</option>
+<option>Claude 3 Opus</option>
+<option>DeepSeek-V3</option>
+</select>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">API Key</label>
+<input class="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20" placeholder="sk-••••••••••••••••" type="password"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">参数微调 (Temperature)</label>
+<input class="w-full accent-primary" type="range"/>
+</div>
+</div>
+<button class="w-full mt-2 py-3 px-6 bg-surface-container-high text-primary font-bold rounded-full text-sm hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+                            测试连接
+                        </button>
+</section>
+<!-- Image Model Section -->
+<section class="bg-surface-container-lowest p-8 rounded-lg shadow-[0_12px_40px_rgba(74,71,210,0.03)] flex flex-col gap-6 transform md:translate-y-6">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-tertiary/10 rounded-lg">
+<span class="material-symbols-outlined text-tertiary" data-icon="image">image</span>
+</div>
+<h3 class="text-xl font-bold font-headline">图像 (Image)</h3>
+</div>
+<div class="space-y-4">
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">模型提供商</label>
+<select class="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20 appearance-none">
+<option>Midjourney v6</option>
+<option>Stable Diffusion XL</option>
+<option>DALL-E 3</option>
+</select>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">API Key</label>
+<input class="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20" placeholder="••••••••••••••••" type="password"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">参数微调 (Aspect Ratio)</label>
+<div class="flex gap-2">
+<button class="px-3 py-1 bg-primary text-white text-xs rounded-full">16:9</button>
+<button class="px-3 py-1 bg-surface-container-high text-on-surface-variant text-xs rounded-full">9:16</button>
+<button class="px-3 py-1 bg-surface-container-high text-on-surface-variant text-xs rounded-full">1:1</button>
+</div>
+</div>
+</div>
+<button class="w-full mt-2 py-3 px-6 bg-surface-container-high text-primary font-bold rounded-full text-sm hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+                            测试连接
+                        </button>
+</section>
+<!-- Video Model Section -->
+<section class="bg-surface-container-lowest p-8 rounded-lg shadow-[0_12px_40px_rgba(74,71,210,0.03)] flex flex-col gap-6">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-secondary/10 rounded-lg">
+<span class="material-symbols-outlined text-secondary" data-icon="movie">movie</span>
+</div>
+<h3 class="text-xl font-bold font-headline">视频 (Video)</h3>
+</div>
+<div class="space-y-4">
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">模型提供商</label>
+<select class="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20 appearance-none">
+<option>Sora (Closed Beta)</option>
+<option>Runway Gen-2</option>
+<option>Pika Art</option>
+</select>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Webhook URL</label>
+<input class="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20" placeholder="https://api.yourdomain.com/callback" type="text"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">参数微调 (FPS)</label>
+<select class="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm">
+<option>24 FPS</option>
+<option>30 FPS</option>
+<option>60 FPS</option>
+</select>
+</div>
+</div>
+<button class="w-full mt-2 py-3 px-6 bg-surface-container-high text-primary font-bold rounded-full text-sm hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+                            测试连接
+                        </button>
+</section>
+<!-- Voice Model Section -->
+<section class="bg-surface-container-lowest p-8 rounded-lg shadow-[0_12px_40px_rgba(74,71,210,0.03)] flex flex-col gap-6 transform md:translate-y-6">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-error/10 rounded-lg">
+<span class="material-symbols-outlined text-error" data-icon="record_voice_over">record_voice_over</span>
+</div>
+<h3 class="text-xl font-bold font-headline">语音 (Voice)</h3>
+</div>
+<div class="space-y-4">
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">模型提供商</label>
+<select class="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20 appearance-none">
+<option>ElevenLabs</option>
+<option>OpenAI TTS</option>
+<option>Azure Speech</option>
+</select>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Voice ID</label>
+<input class="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/20" placeholder="EX: pNInz6ob8mwvPs_1" type="text"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">参数微调 (Stability)</label>
+<input class="w-full accent-error" type="range"/>
+</div>
+</div>
+<button class="w-full mt-2 py-3 px-6 bg-surface-container-high text-primary font-bold rounded-full text-sm hover:bg-primary hover:text-white transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+                            测试连接
+                        </button>
+</section>
+</div>
+</div>
+</main>
+</div>
+<!-- BottomNavBar -->
+<div class="fixed bottom-8 w-full flex justify-center z-50">
+<nav class="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full px-6 py-3 w-fit min-w-[400px] bg-[#ffffff]/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-[#5a5b60]/10 shadow-[0_12px_40px_rgba(74,71,210,0.1)] flex justify-around items-center">
+<a class="text-[#5a5b60] px-4 py-2 flex items-center gap-2 hover:bg-[#f0f0f6] dark:hover:bg-slate-800 transition-all rounded-full font-manrope font-bold text-xs" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span>生成剧本</span>
+</a>
+<a class="text-[#5a5b60] px-4 py-2 flex items-center gap-2 hover:bg-[#f0f0f6] dark:hover:bg-slate-800 transition-all rounded-full font-manrope font-bold text-xs" href="#">
+<span class="material-symbols-outlined" data-icon="magic_button">magic_button</span>
+<span>AI 优化</span>
+</a>
+<a class="bg-[#4a47d2] text-white rounded-full px-6 py-2 flex items-center gap-2 scale-105 active:scale-95 duration-300 font-manrope font-bold text-xs" href="#">
+<span>下一步</span>
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</nav>
+</div>
+</body></html>
