@@ -11,6 +11,7 @@ from typing import Optional, Dict, Any, List, AsyncGenerator
 from datetime import datetime
 import json
 import asyncio
+import uuid
 
 from app.core.database import get_db, Project, Character, ModelConfig
 from app.services.llm_service import get_llm_service
@@ -317,7 +318,8 @@ async def generate_script(
                     personality=str(char_data.get("personality", "")) if char_data.get("personality") else None,
                     appearance=appearance_str,
                     clothing=clothing_str,
-                    style="anime"
+                    style="anime",
+                    character_id=f"char_{uuid.uuid4().hex[:8]}"
                 )
                 db.add(character)
             await db.commit()

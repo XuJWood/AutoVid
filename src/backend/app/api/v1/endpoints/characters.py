@@ -83,6 +83,7 @@ class GenerateImageRequest(BaseModel):
     prompt_suffix: Optional[str] = ""
     styles: Optional[List[str]] = ["realistic"]
     count_per_style: Optional[int] = 4
+    custom_prompt: Optional[str] = ""  # 用户自定义完整提示词（覆盖自动生成的）
 
 
 class GenerateImageResponse(BaseModel):
@@ -264,23 +265,43 @@ async def generate_character_image(
     if not config:
         raise HTTPException(status_code=400, detail="图像模型未配置，请先在设置中配置图像模型")
 
-    # 构建角色描述提示词
-    appearance_parts = []
-    if character.appearance:
-        appearance_parts.append(f"appearance: {character.appearance}")
-    if character.clothing:
-        appearance_parts.append(f"clothing: {character.clothing}")
-    if character.gender:
-        appearance_parts.append(f"gender: {character.gender}")
-    if character.age:
-        appearance_parts.append(f"age: {character.age}")
+    # 如果用户提供了自定义提示词，直接使用；否则从角色数据自动构建
+    if request.custom_prompt and request.custom_prompt.strip():
+        base_prompt = request.custom_prompt.strip()
+    else:
+        # 构建角色描述提示词（日系动漫风格）
+        desc_parts = []
+        if character.gender:
+            desc_parts.append({"女": "female", "男": "male"}.get(character.gender, character.gender))
+        if character.age:
+            desc_parts.append(f"{character.age} years old")
+        if character.appearance:
+            desc_parts.append(character.appearance)
+        if character.clothing:
+            desc_parts.append(f"wearing {character.clothing}")
 
-    base_prompt = ", ".join(appearance_parts) if appearance_parts else character.name
-    if request.prompt_suffix:
-        base_prompt += f", {request.prompt_suffix}"
+        base_desc = ", ".join(desc_parts) if desc_parts else character.name
+        if request.prompt_suffix:
+            base_desc += f", {request.prompt_suffix}"
+
+        # Determine style tags based on gender
+        if character.gender == "女":
+            style_tags = (
+                "Japanese anime style, 日系动漫风, 二次元, vibrant colors, high quality, "
+                "beautiful anime girl, sexy cute alluring, delicate features, soft facial lines, "
+                "clean lineart, masterpiece, full body shot"
+            )
+        else:
+            style_tags = (
+                "Japanese anime style, 日系动漫风, 二次元, vibrant colors, high quality, "
+                "handsome anime guy, sharp features, clean lineart, masterpiece, full body shot"
+            )
+
+        base_prompt = f"{base_desc}, {style_tags}"
 
     # 调用图像生成服务
     from app.services.image_service import get_image_service
+    from app.services.media_storage import get_character_dir, save_image_to_path, local_path_to_url
 
     service = get_image_service(
         provider=config.provider,
@@ -294,19 +315,38 @@ async def generate_character_image(
 
     generated_images = {}
     for style in request.styles:
-        style_prompt = f"{base_prompt}, {style} style, character portrait, full body shot, high quality"
+        style_prompt = f"{base_prompt}, {style} style, character design, character portrait"
         try:
             gen_result = await service.generate(prompt=style_prompt, project_id=project_id)
             if gen_result.success and gen_result.data:
                 images = gen_result.data.get("images", [])
-                generated_images[style] = images
+                # Download each image to character's local folder
+                local_images = []
+                if project_id:
+                    char_dir = get_character_dir(project_id, character.name)
+                    for i, img_url in enumerate(images):
+                        ext = "png"
+                        for e in ["jpg", "jpeg", "png", "webp"]:
+                            if f".{e}" in img_url.split("?")[0]:
+                                ext = e
+                                break
+                        local_path = os.path.join(char_dir, f"portrait_{i+1}.{ext}")
+                        saved = await save_image_to_path(img_url, local_path)
+                        if saved:
+                            local_images.append(local_path_to_url(saved))
+                        else:
+                            local_images.append(img_url)  # fallback to remote URL
+                else:
+                    local_images = images
+
+                generated_images[style] = local_images
             else:
                 generated_images[style] = []
         except Exception as e:
             generated_images[style] = []
             print(f"Image generation failed for style {style}: {e}")
 
-    # 保存生成的图片
+    # 保存生成的图片（使用本地路径）
     all_images = []
     for imgs in generated_images.values():
         all_images.extend(imgs)

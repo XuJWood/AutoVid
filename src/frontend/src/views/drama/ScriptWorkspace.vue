@@ -15,17 +15,23 @@
               class="bg-surface-container-lowest rounded-lg p-4 border border-primary/10"
             >
               <div class="flex items-center gap-4">
-                <div class="w-16 h-20 bg-surface-container rounded-lg overflow-hidden">
+                <div
+                  class="w-16 h-20 bg-surface-container rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all flex-shrink-0"
+                  @click="openCharacterModal(character)"
+                  title="点击预览角色形象"
+                >
                   <img
-                    v-if="character.selected_image"
-                    :src="toPlayableUrl(character.selected_image)"
+                    v-if="character.selected_image || character.three_views?.design_sheet || character.three_views?.front"
+                    :src="toPlayableUrl(character.three_views?.design_sheet || character.three_views?.front || character.selected_image)"
                     class="w-full h-full object-cover"
+                    @error="(e) => e.target.style.display = 'none'"
                   />
-                  <span v-else class="material-symbols-outlined text-3xl text-on-surface-variant">person</span>
+                  <span v-else class="material-symbols-outlined text-3xl text-on-surface-variant/50 w-full h-full flex items-center justify-center">person</span>
                 </div>
-                <div class="flex-1">
-                  <h4 class="font-bold text-sm">{{ character.name }}</h4>
-                  <p class="text-xs text-on-surface-variant">{{ character.age }}岁 · {{ character.occupation }}</p>
+                <div class="flex-1 min-w-0 cursor-pointer" @click="openCharacterModal(character)" title="点击预览角色详情">
+                  <h4 class="font-bold text-sm truncate">{{ character.name }}</h4>
+                  <p class="text-xs text-on-surface-variant truncate">{{ character.age }}岁 · {{ character.occupation || character.gender || '' }}</p>
+                  <p v-if="character.three_views?.design_sheet || character.three_views?.front" class="text-xs text-green-600 mt-0.5">已有设计图</p>
                 </div>
               </div>
               <div class="flex gap-2 mt-4">
@@ -349,7 +355,7 @@
     <CharacterModal
       v-if="showCharacterModal"
       :character="selectedCharacter"
-      @close="showCharacterModal = false"
+      @close="onCharacterModalClose"
       @select="onCharacterImageSelect"
     />
 
@@ -453,6 +459,15 @@ const updateStage = (stageKey) => {
     } else {
       stage.active = false
     }
+  }
+}
+
+const loadCharacters = async () => {
+  try {
+    const res = await projectsApi.getCharacters(projectId)
+    characters.value = res.data
+  } catch (error) {
+    console.error('Failed to load characters:', error)
   }
 }
 
@@ -571,6 +586,10 @@ const generateScript = async () => {
                 resultSuccess.value = data.status === 'completed'
               }
             }
+            // 剧本生成完成后刷新角色列表（后端已自动创建）
+            if (data.status === 'completed') {
+              await loadCharacters()
+            }
           } catch (e) {
             // 忽略解析错误
           }
@@ -589,6 +608,12 @@ const generateScript = async () => {
 const openCharacterModal = (character) => {
   selectedCharacter.value = character
   showCharacterModal.value = true
+}
+
+const onCharacterModalClose = () => {
+  showCharacterModal.value = false
+  // 刷新角色列表，确保生成的图片在侧边栏显示
+  loadCharacters()
 }
 
 const editCharacter = (character) => {

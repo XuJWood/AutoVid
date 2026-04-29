@@ -206,8 +206,64 @@ class MidjourneyService(BaseAIService):
             return False
 
 
+class SeedreamImageService(BaseAIService):
+    """Volcano Engine Ark Seedream 4.5 image generation service.
+
+    API: POST https://ark.cn-beijing.volces.com/api/v3/images/generations
+    """
+
+    DEFAULT_BASE_URL = "https://ark.cn-beijing.volces.com/api/v3"
+
+    def __init__(self, api_key: str, model: str = "doubao-seedream-4-5-251128", base_url: str = None, **kwargs):
+        effective_base_url = base_url or self.DEFAULT_BASE_URL
+        super().__init__(api_key, effective_base_url, **kwargs)
+        self.model = model
+
+    async def generate(self, prompt: str, **kwargs) -> GenerationResult:
+        """Generate image using Seedream (OpenAI-compatible images endpoint)."""
+        try:
+            body = {
+                "model": self.model,
+                "prompt": prompt,
+                "size": kwargs.get("size", "2K"),
+                "response_format": "url",
+                "watermark": kwargs.get("watermark", True),
+                "stream": False,
+                "sequential_image_generation": "disabled",
+            }
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                resp = await client.post(
+                    f"{self.base_url}/images/generations",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json=body,
+                )
+                if resp.status_code != 200:
+                    return GenerationResult(success=False, error=f"Seedream API error {resp.status_code}: {resp.text[:500]}")
+                data = resp.json()
+                images = [item["url"] for item in data.get("data", []) if "url" in item]
+                return GenerationResult(success=True, data={"images": images})
+        except Exception as e:
+            return GenerationResult(success=False, error=str(e))
+
+    async def test_connection(self) -> bool:
+        try:
+            result = await self.generate("test", size="1K")
+            return result.success
+        except Exception:
+            return False
+
+
 def get_image_service(provider: str, api_key: str, **kwargs) -> BaseAIService:
     """Factory function to get image generation service"""
+    # 火山引擎 Ark Seedream 图像生成
+    if provider.lower() in ["seedream", "volcano-image", "ark-image", "volcengine"]:
+        base_url = kwargs.pop("base_url", None) or SeedreamImageService.DEFAULT_BASE_URL
+        model = kwargs.pop("model", None) or "doubao-seedream-4-5-251128"
+        return SeedreamImageService(api_key=api_key, base_url=base_url, model=model, **kwargs)
+
     # 阿里云百炼图像生成
     if provider.lower() in ["wanx", "alibaba", "aliyun", "qwen-image"]:
         from .alibaba_cloud import WanxImageService, QwenImageService

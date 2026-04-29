@@ -15,31 +15,65 @@
       <div class="p-6 flex-1 overflow-y-auto">
         <!-- Character Info -->
         <div class="mb-6">
-          <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2 block">角色信息</label>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant block">角色信息</label>
+            <button
+              @click="isEditingDetails = !isEditingDetails"
+              class="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
+            >
+              <span class="material-symbols-outlined text-sm">{{ isEditingDetails ? 'close' : 'edit' }}</span>
+              {{ isEditingDetails ? '取消编辑' : '编辑详情' }}
+            </button>
+          </div>
           <div class="bg-surface-container-low p-4 rounded-lg">
             <div class="flex items-start gap-4">
               <!-- Existing image preview -->
-              <div v-if="character?.selected_image" class="w-24 h-32 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container">
-                <img :src="toPlayableUrl(character.selected_image)" class="w-full h-full object-cover" />
+              <div v-if="character?.three_views?.design_sheet || character?.three_views?.front || character?.selected_image" class="w-24 h-32 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container cursor-pointer" @click="openImagePreview">
+                <img :src="toPlayableUrl(character.three_views?.design_sheet || character.three_views?.front || character.selected_image)" class="w-full h-full object-cover" />
               </div>
               <div v-else class="w-24 h-32 rounded-lg flex-shrink-0 bg-surface-container flex items-center justify-center">
                 <span class="material-symbols-outlined text-3xl text-on-surface-variant/50">person</span>
               </div>
-              <div class="flex-1">
+              <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-2">
                   <span v-if="character?.age" class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{{ character.age }}岁</span>
                   <span v-if="character?.gender" class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{{ character.gender }}</span>
                   <span v-if="character?.occupation" class="text-xs bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full">{{ character.occupation }}</span>
                 </div>
-                <p v-if="character?.personality" class="text-xs text-on-surface-variant mb-2">
-                  <strong>性格:</strong> {{ character.personality }}
-                </p>
-                <p v-if="character?.appearance" class="text-xs text-on-surface mb-1">
-                  <strong>外貌:</strong> {{ character.appearance }}
-                </p>
-                <p v-if="character?.clothing" class="text-xs text-on-surface-variant">
-                  <strong>服装:</strong> {{ character.clothing }}
-                </p>
+                <template v-if="isEditingDetails">
+                  <div class="space-y-2">
+                    <div>
+                      <label class="text-xs text-on-surface-variant block mb-0.5">外貌描述</label>
+                      <textarea v-model="editAppearance" rows="2" class="w-full bg-surface-container-lowest border border-surface-container rounded text-xs p-2 resize-y focus:outline-none focus:border-primary"></textarea>
+                    </div>
+                    <div>
+                      <label class="text-xs text-on-surface-variant block mb-0.5">服装描述</label>
+                      <textarea v-model="editClothing" rows="2" class="w-full bg-surface-container-lowest border border-surface-container rounded text-xs p-2 resize-y focus:outline-none focus:border-primary"></textarea>
+                    </div>
+                    <div>
+                      <label class="text-xs text-on-surface-variant block mb-0.5">性格</label>
+                      <textarea v-model="editPersonality" rows="1" class="w-full bg-surface-container-lowest border border-surface-container rounded text-xs p-2 resize-y focus:outline-none focus:border-primary"></textarea>
+                    </div>
+                    <button
+                      @click="saveCharacterDetails"
+                      :disabled="savingDetails"
+                      class="px-4 py-1.5 text-xs font-bold bg-primary text-white rounded-full hover:brightness-95 transition-all disabled:opacity-50"
+                    >
+                      {{ savingDetails ? '保存中...' : '保存修改' }}
+                    </button>
+                  </div>
+                </template>
+                <template v-else>
+                  <p v-if="character?.personality" class="text-xs text-on-surface-variant mb-2">
+                    <strong>性格:</strong> {{ character.personality }}
+                  </p>
+                  <p v-if="character?.appearance" class="text-xs text-on-surface mb-1 line-clamp-3">
+                    <strong>外貌:</strong> {{ character.appearance }}
+                  </p>
+                  <p v-if="character?.clothing" class="text-xs text-on-surface-variant line-clamp-2">
+                    <strong>服装:</strong> {{ character.clothing }}
+                  </p>
+                </template>
               </div>
             </div>
           </div>
@@ -79,7 +113,7 @@
         <!-- Prompt Preview & Edit -->
         <div class="mb-6">
           <div class="flex items-center justify-between mb-2">
-            <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">提示词预览 & 编辑</label>
+            <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">图像生成提示词（可编辑，用于"生成形象"和"生成设计图"）</label>
             <button
               @click="fetchPromptPreview"
               :disabled="loadingPrompt"
@@ -96,7 +130,7 @@
             placeholder="点击'刷新提示词'获取自动生成的提示词，或直接输入自定义提示词..."
           ></textarea>
           <p class="text-xs text-on-surface-variant mt-1">
-            左侧为三视图（正面/侧面/背面）+ 右侧为4种表情（开心/愤怒/惊讶/悲伤），排列在一张角色设计表上
+            编辑上方提示词后点击"生成形象"或"生成设计图"，提示词将作为图像生成的输入。左侧为三视图（正面/侧面/背面）+ 右侧为4种表情。
           </p>
         </div>
 
@@ -126,7 +160,7 @@
                   selectedImage === img ? 'border-primary ring-2 ring-primary/20' : 'border-transparent hover:border-outline-variant'
                 ]"
               >
-                <img :src="img" class="w-full h-full object-cover" />
+                <img :src="toPlayableUrl(img)" class="w-full h-full object-cover" @error="(e) => e.target.style.display = 'none'" />
               </div>
             </div>
           </div>
@@ -252,6 +286,11 @@ const generationError = ref('')
 const threeViews = ref(null)
 const activeView = ref('front')
 const loadingPrompt = ref(false)
+const isEditingDetails = ref(false)
+const editAppearance = ref('')
+const editClothing = ref('')
+const editPersonality = ref('')
+const savingDetails = ref(false)
 
 const viewTypes = [
   { key: 'front', label: '正面' },
@@ -267,12 +306,47 @@ function toPlayableUrl(url) {
   return url
 }
 
-// Load prompt preview when character changes
+// Load prompt preview and init edit fields when character changes
 watch(() => props.character, (newChar) => {
   if (newChar) {
     fetchPromptPreview()
+    // Init edit fields
+    editAppearance.value = newChar.appearance || ''
+    editClothing.value = newChar.clothing || ''
+    editPersonality.value = newChar.personality || ''
+    isEditingDetails.value = false
   }
 }, { immediate: true })
+
+const openImagePreview = () => {
+  // Clicking the image focuses it for selection
+}
+
+const saveCharacterDetails = async () => {
+  if (!props.character?.id) return
+  savingDetails.value = true
+  try {
+    await charactersApi.update(props.character.id, {
+      description: {
+        appearance: editAppearance.value,
+        clothing: editClothing.value,
+        personality: editPersonality.value
+      }
+    })
+    // Update local character object
+    if (props.character) {
+      props.character.appearance = editAppearance.value
+      props.character.clothing = editClothing.value
+      props.character.personality = editPersonality.value
+    }
+    isEditingDetails.value = false
+  } catch (error) {
+    console.error('Failed to save character details:', error)
+    alert('保存失败：' + (error.response?.data?.detail || error.message))
+  } finally {
+    savingDetails.value = false
+  }
+}
 
 const toggleStyle = (styleId) => {
   const index = selectedStyles.value.indexOf(styleId)
@@ -308,7 +382,8 @@ const generateImages = async () => {
     const response = await charactersApi.generateImage(props.character.id, {
       styles: selectedStyles.value,
       count_per_style: 4,
-      prompt_suffix: promptSuffix.value
+      prompt_suffix: promptSuffix.value,
+      custom_prompt: customPrompt.value || ''
     })
     generatedImages.value = response.data.images
   } catch (error) {

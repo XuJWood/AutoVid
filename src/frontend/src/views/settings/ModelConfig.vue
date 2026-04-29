@@ -97,19 +97,32 @@
         <div class="space-y-4">
           <div class="flex flex-col gap-2">
             <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">模型提供商</label>
-            <select v-model="imageModel.provider" class="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm">
+            <select v-model="imageModel.provider" @change="onImageProviderChange" class="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm">
+              <option value="seedream">Seedream 4.5 (火山引擎/推荐)</option>
               <option value="wanx">万相 (阿里云百炼)</option>
               <option value="qwen-image">千问图像 (阿里云百炼)</option>
               <option value="midjourney">Midjourney v6</option>
               <option value="stability">Stable Diffusion XL</option>
               <option value="dalle">DALL-E 3</option>
             </select>
+            <p class="text-[11px] text-on-surface-variant/70" v-if="imageModel.provider === 'seedream'">
+              火山引擎 Ark 平台，Seedream 4.5 模型，支持 2K/4K 分辨率
+            </p>
+            <p class="text-[11px] text-on-surface-variant/70" v-else-if="imageModel.provider === 'wanx'">
+              阿里云百炼平台，使用 DashScope API Key
+            </p>
           </div>
           <div class="flex flex-col gap-2">
             <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">模型</label>
             <select v-model="imageModel.model" class="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm">
-              <option value="wanx2.1-t2i-turbo">wanx2.1-t2i-turbo</option>
-              <option value="wanx2.1-t2i-plus">wanx2.1-t2i-plus</option>
+              <template v-if="imageModel.provider === 'seedream'">
+                <option value="doubao-seedream-4-5-251128">Seedream 4.5 (推荐)</option>
+                <option value="doubao-seedream-4-0-251128">Seedream 4.0</option>
+              </template>
+              <template v-else>
+                <option value="wanx2.1-t2i-turbo">wanx2.1-t2i-turbo</option>
+                <option value="wanx2.1-t2i-plus">wanx2.1-t2i-plus</option>
+              </template>
             </select>
           </div>
           <div class="flex flex-col gap-2">
@@ -120,6 +133,15 @@
               class="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm"
               placeholder="••••••••••••••••"
             />
+          </div>
+          <div class="flex flex-col gap-2" v-if="imageModel.provider === 'seedream'">
+            <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">API 地址</label>
+            <input
+              v-model="imageModel.base_url"
+              class="w-full bg-surface-container-low border-none rounded-lg p-3 text-sm"
+              placeholder="https://ark.cn-beijing.volces.com/api/v3"
+            />
+            <p class="text-[11px] text-on-surface-variant/70">留空使用默认地址</p>
           </div>
           <div class="flex flex-col gap-2">
             <label class="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">默认比例</label>
@@ -411,12 +433,26 @@ const onTextProviderChange = () => {
   }
 }
 
+const IMAGE_PROVIDER_DEFAULTS = {
+  'seedream': { model: 'doubao-seedream-4-5-251128' },
+  'wanx': { model: 'wanx2.1-t2i-turbo' },
+  'qwen-image': { model: 'qwen-image-plus' },
+}
+
 const imageModel = ref({
-  provider: 'wanx',
-  model: 'wanx2.1-t2i-turbo',
+  provider: 'seedream',
+  model: 'doubao-seedream-4-5-251128',
   api_key: '',
+  base_url: 'https://ark.cn-beijing.volces.com/api/v3',
   aspect_ratio: '16:9'
 })
+
+const onImageProviderChange = () => {
+  const def = IMAGE_PROVIDER_DEFAULTS[imageModel.value.provider]
+  if (def && def.model) {
+    imageModel.value.model = def.model
+  }
+}
 
 const videoModel = ref({
   provider: 'seedance',
@@ -491,6 +527,7 @@ const saveConfig = async () => {
         provider: imageModel.value.provider,
         model: imageModel.value.model,
         api_key: imageModel.value.api_key,
+        base_url: imageModel.value.base_url || null,
         params: { aspect_ratio: imageModel.value.aspect_ratio }
       }),
       modelConfigApi.updateOrCreate({
@@ -532,6 +569,7 @@ onMounted(async () => {
         imageModel.value = {
           ...imageModel.value,
           provider: config.provider, model: config.model, api_key: config.api_key,
+          base_url: config.base_url || imageModel.value.base_url,
           aspect_ratio: p.aspect_ratio ?? imageModel.value.aspect_ratio
         }
       } else if (config.name === 'video') {

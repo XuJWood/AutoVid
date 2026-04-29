@@ -5,7 +5,7 @@
       <div class="flex items-center justify-between mb-8">
         <div>
           <h1 class="text-2xl font-bold font-headline tracking-tight">剧集编辑</h1>
-          <p class="text-sm text-on-surface-variant mt-1">每集~60秒/4个片段（5-15秒/段），每个片段生成一个视频（Seedance 视频+音频一体化）</p>
+          <p class="text-sm text-on-surface-variant mt-1">每集~60秒/4个片段（5-15秒/段），每个片段生成一个视频</p>
         </div>
         <div class="flex gap-3">
           <router-link
@@ -212,7 +212,7 @@
                     class="text-xs font-bold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                     :class="seg.video_url ? 'bg-surface-container-high hover:bg-surface-container' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'"
                   >
-                    {{ seg.video_status === 'processing' ? '生成中...' : seg.video_url ? '重新生成' : '生成视频 (Seedance)' }}
+                    {{ seg.video_status === 'processing' ? '生成中...' : seg.video_url ? '重新生成' : '生成视频' }}
                   </button>
                   <a
                     v-if="seg.video_url"
@@ -462,7 +462,7 @@ onMounted(async () => {
     const vcRes = await modelConfigApi.getByName('video')
     const vc = vcRes.data
     const p = vc.params || {}
-    videoConfigInfo.value = `${vc.model || '未配置'} · ${p.duration || 5}s · ${p.resolution || '720p'} · ${p.ratio || '16:9'}`
+    videoConfigInfo.value = `${vc.provider === 'seedance' ? 'Seedance' : vc.provider === 'wanx' ? '万相' : vc.provider}/${vc.model || '未配置'} · ${p.duration || 5}s · ${p.ratio || '16:9'}`
   } catch (e) {
     // ignore
   }
