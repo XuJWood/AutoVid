@@ -192,12 +192,18 @@ class CharacterConsistencyService:
         self,
         character_id: int,
         style: str = "anime",
-        prompt_suffix: str = ""
+        prompt_suffix: str = "",
+        custom_prompt: str = ""
     ) -> Dict[str, Any]:
         """
-        生成角色三视图（正面/侧面/背面），保存到角色专属文件夹
+        生成角色设计图：三视图 + 表情特写 合并在同一张图上
+        - 三视图：正面/侧面/背面全身
+        - 表情特写：至少3个表情（开心/愤怒/惊讶/悲伤等）
+        - 全部排列在一张角色设计表（character design sheet）上
 
-        Directory: media/projects/{project_id}/characters/{name}/front|side|back.png
+        Directory: media/projects/{project_id}/characters/{name}/design_sheet.png
+
+        If custom_prompt is provided, it overrides the auto-generated prompt.
         """
         result = await self.db.execute(
             select(Character).where(Character.id == character_id)
@@ -216,27 +222,38 @@ class CharacterConsistencyService:
         if not config:
             return {"error": "Image model not configured"}
 
-        desc_parts = []
-        if character.appearance:
-            desc_parts.append(character.appearance)
-        if character.clothing:
-            desc_parts.append(f"wearing {character.clothing}")
-        base_desc = ", ".join(desc_parts) if desc_parts else character.name
-        if prompt_suffix:
-            base_desc += f", {prompt_suffix}"
+        if custom_prompt:
+            combined_prompt = custom_prompt
+        else:
+            desc_parts = []
+            if character.appearance:
+                desc_parts.append(character.appearance)
+            if character.clothing:
+                desc_parts.append(f"wearing {character.clothing}")
+            base_desc = ", ".join(desc_parts) if desc_parts else character.name
+            if prompt_suffix:
+                base_desc += f", {prompt_suffix}"
 
-        effective_style = style or "anime"
+            effective_style = style or "anime"
 
-        # Female characters get sexy/cute treatment
-        style_tags = "Japanese anime style, 日系动漫, vibrant colors, high quality"
-        if character.gender == "女":
-            style_tags += ", beautiful anime girl, sexy cute, alluring, delicate features, soft facial lines, eye-catching, charming"
+            # Build style tags for female characters
+            style_tags = "Japanese anime style, 日系动漫, vibrant colors, high quality, clean lineart"
+            if character.gender == "女":
+                style_tags += ", beautiful anime girl, sexy cute, alluring, delicate features, soft facial lines, eye-catching"
 
-        views_prompts = {
-            "front": f"{base_desc}, front view, full body, standing straight, looking at viewer, {effective_style} style, {style_tags}, character design sheet, clean white background",
-            "side": f"{base_desc}, side view (45 degree angle), full body, standing pose, {effective_style} style, {style_tags}, character design sheet, clean white background",
-            "back": f"{base_desc}, back view, full body, from behind, {effective_style} style, {style_tags}, character design sheet, clean white background"
-        }
+            # Single combined prompt for character design sheet
+            # Generates a single image with: three full-body views + 4 facial expressions, arranged in a grid
+            combined_prompt = (
+                f"character design sheet, full body turnaround, "
+                f"{base_desc}, "
+                f"{effective_style} style, {style_tags}, "
+                f"multiple views: front view full body standing straight looking at viewer, "
+                f"side view full body standing at 45 degree angle, "
+                f"back view full body from behind, "
+                f"and facial expressions chart with 4 expressions: happy smiling, angry shouting, surprised shocked, sad crying, "
+                f"all arranged in a clean professional character reference sheet layout, "
+                f"clean white background, character design reference sheet, model sheet, high resolution"
+            )
 
         service = get_image_service(
             provider=config.provider,
@@ -246,52 +263,54 @@ class CharacterConsistencyService:
             **(config.params or {})
         )
 
-        # Get character's folder
         char_dir = get_character_dir(character.project_id, character.name)
 
-        views = {}
-        all_images = []
-        for view_name, prompt in views_prompts.items():
-            try:
-                gen_result = await service.generate(prompt=prompt, project_id=character.project_id)
-                if gen_result.success and gen_result.data:
-                    images = gen_result.data.get("images", [])
-                    if images:
-                        # Download to character folder with clean name
-                        local_path = os.path.join(char_dir, f"{view_name}.png")
-                        saved = await save_image_to_path(images[0], local_path)
-                        views[view_name] = saved if saved else images[0]
-                        if saved:
-                            all_images.append(saved)
-                        else:
-                            all_images.append(images[0])
-                    else:
-                        views[view_name] = None
+        try:
+            gen_result = await service.generate(prompt=combined_prompt, project_id=character.project_id)
+            if gen_result.success and gen_result.data:
+                images = gen_result.data.get("images", [])
+                if images:
+                    # Download as design_sheet.png
+                    design_path = os.path.join(char_dir, "design_sheet.png")
+                    saved = await save_image_to_path(images[0], design_path)
+
+                    # Convert local absolute path → /media/... URL for storage & frontend rendering
+                    design_url = local_path_to_url(saved) if saved else images[0]
+
+                    views = {
+                        "design_sheet": design_url,
+                        "combined": True,
+                        "expressions": ["happy", "angry", "surprised", "sad"],
+                        "views": ["front", "side", "back"]
+                    }
+
+                    all_images = [design_url]
+
+                    # Save a copy as reference.png for backward compatibility
+                    if saved and os.path.exists(saved):
+                        ref_path = os.path.join(char_dir, "reference.png")
+                        shutil.copy(saved, ref_path)
+
+                    character.three_views = views
+                    character.alternative_images = all_images
+                    character.selected_image = design_url
+                    await self.db.commit()
+
+                    return {
+                        "character_id": character_id,
+                        "views": views,
+                        "selected_image": character.selected_image,
+                        "three_views": character.three_views,
+                        "prompt_used": combined_prompt,
+                        "message": "三视图+表情设计图生成完成"
+                    }
                 else:
-                    views[view_name] = None
-            except Exception as e:
-                views[view_name] = None
-                print(f"Three-view generation failed for {view_name}: {e}")
-
-        # Also save a reference.png (copy of front)
-        if views.get("front") and os.path.exists(views["front"]):
-            import shutil
-            ref_path = os.path.join(char_dir, "reference.png")
-            shutil.copy(views["front"], ref_path)
-
-        # Store organized paths in DB
-        character.three_views = views
-        character.alternative_images = all_images
-        if views.get("front"):
-            character.selected_image = views["front"]
-        await self.db.commit()
-
-        return {
-            "character_id": character_id,
-            "views": views,
-            "selected_image": character.selected_image,
-            "three_views": character.three_views
-        }
+                    return {"error": "No images generated"}
+            else:
+                return {"error": f"Image generation failed: {gen_result.error}"}
+        except Exception as e:
+            print(f"Design sheet generation failed: {e}")
+            return {"error": str(e)}
 
     async def update_character_reference(
         self,

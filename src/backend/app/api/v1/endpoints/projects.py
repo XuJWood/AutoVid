@@ -16,6 +16,7 @@ from app.core.database import get_db, Project, Character, ModelConfig
 from app.services.llm_service import get_llm_service
 from app.services.prompts import get_script_prompt
 from app.api.v1.endpoints.characters import CharacterResponse
+from app.services.media_storage import local_path_to_url
 
 router = APIRouter()
 
@@ -131,15 +132,43 @@ async def update_project(
 
 @router.delete("/{project_id}")
 async def delete_project(project_id: int, db: AsyncSession = Depends(get_db)):
-    """Delete a project"""
+    """Delete a project + cascade: characters, storyboards, segments, generated_videos, and media files."""
+    import os
+    import shutil
+    from sqlalchemy import delete as sql_delete
+    from app.core.database import Character, Storyboard, Segment, GeneratedVideo
+    from app.services.media_storage import PROJECTS_DIR
+
     result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalar_one_or_none()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
+    # Cascade delete (order matters: segments → storyboards → others)
+    sb_rows = await db.execute(
+        select(Storyboard.id).where(Storyboard.project_id == project_id)
+    )
+    sb_ids = [row[0] for row in sb_rows.fetchall()]
+    if sb_ids:
+        await db.execute(sql_delete(Segment).where(Segment.storyboard_id.in_(sb_ids)))
+
+    await db.execute(sql_delete(Segment).where(Segment.project_id == project_id))
+    await db.execute(sql_delete(Storyboard).where(Storyboard.project_id == project_id))
+    await db.execute(sql_delete(Character).where(Character.project_id == project_id))
+    await db.execute(sql_delete(GeneratedVideo).where(GeneratedVideo.project_id == project_id))
+
     await db.delete(project)
     await db.commit()
-    return {"message": "Project deleted successfully"}
+
+    # Remove project's media folder (best-effort)
+    project_dir = os.path.join(PROJECTS_DIR, str(project_id))
+    if os.path.isdir(project_dir):
+        try:
+            shutil.rmtree(project_dir)
+        except Exception as e:
+            print(f"[delete_project] Failed to remove media dir {project_dir}: {e}")
+
+    return {"message": "Project deleted successfully", "project_id": project_id}
 
 
 @router.post("/{project_id}/script/generate")
@@ -192,7 +221,9 @@ async def generate_script(
                     "qwen": "通义千问",
                     "openai": "GPT",
                     "anthropic": "Claude",
-                    "deepseek": "DeepSeek"
+                    "deepseek": "DeepSeek (OpenAI-compat)",
+                    "deepseek-anthropic": "DeepSeek-V4-Pro (Anthropic-compat)",
+                    "deepseek-v4": "DeepSeek-V4-Pro",
                 }.get(model_config.provider.lower(), model_config.provider)
 
                 yield f"data: {json.dumps({'status': 'generating', 'message': f'正在使用 {provider_name} 生成剧本，请耐心等待...', 'progress': 30}, ensure_ascii=False)}\n\n"
@@ -252,17 +283,30 @@ async def generate_script(
         # 自动创建角色记录
         if script_content.get("characters"):
             for char_data in script_content["characters"]:
-                appearance = char_data.get("appearance", {})
+                appearance = char_data.get("appearance", "")
                 if isinstance(appearance, dict):
-                    appearance_str = appearance.get("face", "")
+                    parts = [v for v in [
+                        appearance.get("face", ""),
+                        appearance.get("hair", ""),
+                        appearance.get("body", ""),
+                        appearance.get("skin", ""),
+                        appearance.get("distinctive_features", ""),
+                    ] if v]
+                    appearance_str = "，".join(parts) if parts else ""
                 else:
-                    appearance_str = str(appearance)
+                    appearance_str = str(appearance) if appearance else ""
 
-                clothing = char_data.get("clothing", {})
+                clothing = char_data.get("clothing", "")
                 if isinstance(clothing, dict):
-                    clothing_str = clothing.get("style", "")
+                    parts = [v for v in [
+                        clothing.get("style", ""),
+                        clothing.get("casual", ""),
+                        clothing.get("formal", ""),
+                        clothing.get("accessories", ""),
+                    ] if v]
+                    clothing_str = "，".join(parts) if parts else ""
                 else:
-                    clothing_str = str(clothing)
+                    clothing_str = str(clothing) if clothing else ""
 
                 character = Character(
                     project_id=project_id,
@@ -467,10 +511,40 @@ def get_mock_script(project: Project) -> Dict[str, Any]:
     }
 
 
+def _normalize_char_url(url: str) -> Optional[str]:
+    if not url:
+        return url
+    if url.startswith("/media/"):
+        return url
+    if "/media/" in url:
+        idx = url.index("/media/")
+        return url[idx:]
+    return url
+
+
+def _normalize_character_fields(c: Character) -> None:
+    """Normalize all image-bearing fields on a Character to /media/... URLs."""
+    if c.selected_image:
+        c.selected_image = _normalize_char_url(c.selected_image)
+    if isinstance(c.alternative_images, list):
+        c.alternative_images = [_normalize_char_url(u) for u in c.alternative_images if u]
+    if isinstance(c.three_views, dict):
+        normalized = {}
+        for k, v in c.three_views.items():
+            if isinstance(v, str):
+                normalized[k] = _normalize_char_url(v)
+            else:
+                normalized[k] = v
+        c.three_views = normalized
+
+
 @router.get("/{project_id}/characters", response_model=List[CharacterResponse])
 async def get_project_characters(project_id: int, db: AsyncSession = Depends(get_db)):
     """Get all characters in a project"""
     result = await db.execute(
         select(Character).where(Character.project_id == project_id)
     )
-    return result.scalars().all()
+    characters = result.scalars().all()
+    for c in characters:
+        _normalize_character_fields(c)
+    return characters

@@ -314,6 +314,12 @@ def get_video_service(provider: str, api_key: str, **kwargs) -> BaseAIService:
         model = kwargs.pop("model", None) or "wan2.7-t2v"
         return WanxVideoService(api_key=api_key, model=model, **kwargs)
 
+    # 火山引擎 Seedance 视频生成（视频+音频一体化）
+    if provider.lower() in ["seedance", "volcano", "volcengine", "ark"]:
+        from .seedance_video import SeedanceVideoService
+        model = kwargs.pop("model", None) or "doubao-seedance-2-0-fast-260128"
+        return SeedanceVideoService(api_key=api_key, model=model, **kwargs)
+
     services = {
         "kling": KlingAIService,
         "可灵": KlingAIService,

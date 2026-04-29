@@ -4,7 +4,7 @@
       <!-- Header -->
       <div class="p-6 border-b border-surface-container flex justify-between items-center">
         <h2 class="text-xl font-bold font-headline">
-          为"{{ character?.name }}"生成角色形象
+          为"{{ character?.name }}"生成角色设计图
         </h2>
         <button @click="$emit('close')" class="p-2 hover:bg-surface-container rounded-full transition-colors">
           <span class="material-symbols-outlined">close</span>
@@ -13,12 +13,47 @@
 
       <!-- Content -->
       <div class="p-6 flex-1 overflow-y-auto">
-        <!-- Character Description -->
+        <!-- Character Info -->
         <div class="mb-6">
-          <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2 block">角色描述</label>
-          <p class="text-sm text-on-surface bg-surface-container-low p-4 rounded-lg">
-            {{ character?.appearance || '暂无描述' }}
-          </p>
+          <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2 block">角色信息</label>
+          <div class="bg-surface-container-low p-4 rounded-lg">
+            <div class="flex items-start gap-4">
+              <!-- Existing image preview -->
+              <div v-if="character?.selected_image" class="w-24 h-32 rounded-lg overflow-hidden flex-shrink-0 bg-surface-container">
+                <img :src="toPlayableUrl(character.selected_image)" class="w-full h-full object-cover" />
+              </div>
+              <div v-else class="w-24 h-32 rounded-lg flex-shrink-0 bg-surface-container flex items-center justify-center">
+                <span class="material-symbols-outlined text-3xl text-on-surface-variant/50">person</span>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-2">
+                  <span v-if="character?.age" class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{{ character.age }}岁</span>
+                  <span v-if="character?.gender" class="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{{ character.gender }}</span>
+                  <span v-if="character?.occupation" class="text-xs bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full">{{ character.occupation }}</span>
+                </div>
+                <p v-if="character?.personality" class="text-xs text-on-surface-variant mb-2">
+                  <strong>性格:</strong> {{ character.personality }}
+                </p>
+                <p v-if="character?.appearance" class="text-xs text-on-surface mb-1">
+                  <strong>外貌:</strong> {{ character.appearance }}
+                </p>
+                <p v-if="character?.clothing" class="text-xs text-on-surface-variant">
+                  <strong>服装:</strong> {{ character.clothing }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Existing Design Sheet -->
+        <div v-if="character?.three_views?.design_sheet || character?.selected_image" class="mb-6">
+          <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2 block">当前形象</label>
+          <div class="bg-surface-container-low rounded-lg overflow-hidden max-w-md">
+            <img
+              :src="toPlayableUrl(character.three_views?.design_sheet || character.selected_image)"
+              class="w-full object-contain"
+            />
+          </div>
         </div>
 
         <!-- Style Selection -->
@@ -41,29 +76,42 @@
           </div>
         </div>
 
-        <!-- Prompt Override -->
+        <!-- Prompt Preview & Edit -->
         <div class="mb-6">
-          <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2 block">补充提示词</label>
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant">提示词预览 & 编辑</label>
+            <button
+              @click="fetchPromptPreview"
+              :disabled="loadingPrompt"
+              class="text-xs font-bold text-primary flex items-center gap-1 hover:underline"
+            >
+              <span class="material-symbols-outlined text-sm">refresh</span>
+              {{ loadingPrompt ? '加载中...' : '刷新提示词' }}
+            </button>
+          </div>
           <textarea
-            v-model="promptSuffix"
-            rows="3"
-            class="w-full bg-surface-container-low border-none rounded-lg text-sm p-4"
-            placeholder="输入你的补充内容，会追加到默认模板后面..."
+            v-model="customPrompt"
+            rows="6"
+            class="w-full bg-surface-container-low border border-surface-container rounded-lg text-sm p-4 font-mono resize-y"
+            placeholder="点击'刷新提示词'获取自动生成的提示词，或直接输入自定义提示词..."
           ></textarea>
+          <p class="text-xs text-on-surface-variant mt-1">
+            左侧为三视图（正面/侧面/背面）+ 右侧为4种表情（开心/愤怒/惊讶/悲伤），排列在一张角色设计表上
+          </p>
         </div>
 
         <!-- Error Display -->
-        <div v-if="generationError" class="mb-4 bg-red-50 text-red-700 rounded-lg p-3 text-sm">
+        <div v-if="generationError" class="mb-4 bg-red-50 text-red-700 rounded-lg p-3 text-sm whitespace-pre-wrap">
           {{ generationError }}
         </div>
 
-        <!-- Loading State -->
+        <!-- Loading -->
         <div v-if="generating || generatingThreeViews" class="mb-6 text-center py-8">
           <span class="material-symbols-outlined text-3xl text-primary animate-spin mb-2">autorenew</span>
-          <p class="text-sm text-on-surface-variant">{{ generating ? '正在生成形象...' : '正在生成三视图...' }}</p>
+          <p class="text-sm text-on-surface-variant">{{ generating ? '正在生成形象...' : '正在生成角色设计图（三视图+表情）...' }}</p>
         </div>
 
-        <!-- Generated Images -->
+        <!-- Generated Images (old style: separate images per style) -->
         <div v-if="generatedImages && Object.keys(generatedImages).length > 0">
           <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-3 block">生成结果</label>
           <div v-for="(images, style) in generatedImages" :key="style" class="mb-6">
@@ -84,35 +132,52 @@
           </div>
         </div>
 
-        <!-- Three Views -->
+        <!-- Combined Design Sheet (new: three-views + expressions on one image) -->
         <div v-if="threeViews" class="mb-6">
           <div class="flex items-center justify-between mb-3">
-            <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant block">三视图</label>
-            <span class="text-xs text-on-surface-variant">(正面/侧面/背面)</span>
+            <label class="text-xs font-bold uppercase tracking-wider text-on-surface-variant block">角色设计图（三视图 + 表情）</label>
+            <span v-if="threeViews.views?.expressions" class="text-xs text-on-surface-variant">
+              表情: {{ threeViews.views.expressions.join(', ') }}
+            </span>
           </div>
-          <div class="flex gap-2 mb-4">
-            <button
-              v-for="vt in viewTypes"
-              :key="vt.key"
-              @click="activeView = vt.key"
-              :class="[
-                'px-4 py-2 rounded-full text-xs font-bold transition-colors',
-                activeView === vt.key
-                  ? 'bg-primary text-white'
-                  : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
-              ]"
-            >
-              {{ vt.label }}
-            </button>
-          </div>
-          <div class="aspect-[3/4] bg-surface-container-low rounded-lg overflow-hidden">
+          <!-- Combined design sheet -->
+          <div class="aspect-[16/10] bg-surface-container-low rounded-lg overflow-hidden max-w-2xl">
             <img
-              v-if="threeViews.views?.[activeView]"
-              :src="threeViews.views[activeView]"
-              class="w-full h-full object-cover"
+              v-if="threeViews.views?.design_sheet"
+              :src="threeViews.views.design_sheet"
+              class="w-full h-full object-contain"
             />
             <div v-else class="w-full h-full flex items-center justify-center text-on-surface-variant text-sm">
-              暂无 {{ activeView === 'front' ? '正面' : activeView === 'side' ? '侧面' : '背面' }} 视图
+              设计图加载中...
+            </div>
+          </div>
+          <!-- Fallback: individual views (old format) -->
+          <div v-if="!threeViews.views?.combined && threeViews.views?.front" class="mt-4">
+            <p class="text-xs text-on-surface-variant mb-2">旧格式三视图（分别显示）</p>
+            <div class="flex gap-2">
+              <button
+                v-for="vt in viewTypes"
+                :key="vt.key"
+                @click="activeView = vt.key"
+                :class="[
+                  'px-4 py-2 rounded-full text-xs font-bold transition-colors',
+                  activeView === vt.key
+                    ? 'bg-primary text-white'
+                    : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
+                ]"
+              >
+                {{ vt.label }}
+              </button>
+            </div>
+            <div class="aspect-[3/4] bg-surface-container-low rounded-lg overflow-hidden mt-2 max-w-xs">
+              <img
+                v-if="threeViews.views?.[activeView]"
+                :src="threeViews.views[activeView]"
+                class="w-full h-full object-cover"
+              />
+              <div v-else class="w-full h-full flex items-center justify-center text-on-surface-variant text-sm">
+                暂无 {{ activeView === 'front' ? '正面' : activeView === 'side' ? '侧面' : '背面' }} 视图
+              </div>
             </div>
           </div>
         </div>
@@ -129,14 +194,14 @@
             >
               {{ generating ? '生成中...' : '生成形象' }}
             </button>
-            <p v-if="selectedStyles.length === 0" class="text-xs text-red-500 mt-1">请至少选择一种风格</p>
           </div>
           <button
             @click="generateThreeViews"
-            :disabled="generating"
-            class="px-6 py-3 bg-surface-container-high text-primary font-bold rounded-full text-sm hover:bg-primary hover:text-white transition-all disabled:opacity-50"
+            :disabled="generatingThreeViews"
+            class="px-6 py-3 bg-primary text-white font-bold rounded-full text-sm hover:bg-primary-dim transition-all disabled:opacity-50 flex items-center gap-2"
           >
-            {{ generatingThreeViews ? '三视图生成中...' : '生成三视图' }}
+            <span class="material-symbols-outlined text-sm">auto_awesome</span>
+            {{ generatingThreeViews ? '生成中...' : '生成设计图（三视图+表情）' }}
           </button>
         </div>
         <div class="flex gap-3">
@@ -160,7 +225,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { charactersApi } from '@/api/characters'
 
 const props = defineProps({
@@ -176,8 +241,9 @@ const styles = [
   { id: 'watercolor', name: '水墨风' }
 ]
 
-const selectedStyles = ref(['realistic'])
+const selectedStyles = ref(['anime'])
 const promptSuffix = ref('')
+const customPrompt = ref('')
 const generatedImages = ref(null)
 const selectedImage = ref(null)
 const generating = ref(false)
@@ -185,6 +251,7 @@ const generatingThreeViews = ref(false)
 const generationError = ref('')
 const threeViews = ref(null)
 const activeView = ref('front')
+const loadingPrompt = ref(false)
 
 const viewTypes = [
   { key: 'front', label: '正面' },
@@ -192,12 +259,45 @@ const viewTypes = [
   { key: 'back', label: '背面' }
 ]
 
+function toPlayableUrl(url) {
+  if (!url) return null
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  const idx = url.indexOf('/media/')
+  if (idx !== -1) return url.substring(idx)
+  return url
+}
+
+// Load prompt preview when character changes
+watch(() => props.character, (newChar) => {
+  if (newChar) {
+    fetchPromptPreview()
+  }
+}, { immediate: true })
+
 const toggleStyle = (styleId) => {
   const index = selectedStyles.value.indexOf(styleId)
   if (index > -1) {
     selectedStyles.value.splice(index, 1)
   } else {
     selectedStyles.value.push(styleId)
+  }
+}
+
+const fetchPromptPreview = async () => {
+  if (!props.character?.id) return
+  loadingPrompt.value = true
+  try {
+    const res = await charactersApi.previewThreeViewsPrompt(
+      props.character.id,
+      { style: selectedStyles.value[0] || 'anime', prompt_suffix: promptSuffix.value }
+    )
+    if (res.data?.prompt) {
+      customPrompt.value = res.data.prompt
+    }
+  } catch (error) {
+    console.error('Failed to fetch prompt preview:', error)
+  } finally {
+    loadingPrompt.value = false
   }
 }
 
@@ -223,16 +323,18 @@ const generateThreeViews = async () => {
   generationError.value = ''
   try {
     const response = await charactersApi.generateThreeViews(props.character.id, {
-      style: selectedStyles.value[0] || 'realistic',
-      prompt_suffix: promptSuffix.value
+      style: selectedStyles.value[0] || 'anime',
+      prompt_suffix: promptSuffix.value,
+      custom_prompt: customPrompt.value || ''
     })
     threeViews.value = response.data
-    // Only auto-select if no image is selected yet
-    if (response.data.views?.front && !selectedImage.value) {
+    if (response.data.views?.design_sheet && !selectedImage.value) {
+      selectedImage.value = response.data.views.design_sheet
+    } else if (response.data.views?.front && !selectedImage.value) {
       selectedImage.value = response.data.views.front
     }
   } catch (error) {
-    generationError.value = '三视图生成失败：' + (error.response?.data?.detail || error.message)
+    generationError.value = '设计图生成失败：' + (error.response?.data?.detail || error.message)
   } finally {
     generatingThreeViews.value = false
   }

@@ -34,39 +34,82 @@
       <div
         v-for="project in filteredProjects"
         :key="project.id"
-        @click="openProject(project)"
-        class="bg-surface-container-lowest rounded-lg overflow-hidden hover:shadow-lg transition-all cursor-pointer group"
+        class="bg-surface-container-lowest rounded-lg overflow-hidden hover:shadow-lg transition-all group relative"
       >
-        <div class="aspect-video bg-surface-container relative overflow-hidden">
-          <img
-            v-if="getCover(project.id)"
-            :src="getCover(project.id)"
-            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-          <div v-else class="w-full h-full flex items-center justify-center">
-            <span class="material-symbols-outlined text-5xl text-on-surface-variant/20">{{ project.type === 'drama' ? 'theater_comedy' : 'videocam' }}</span>
+        <!-- Delete button (top-right, shows on hover) -->
+        <button
+          @click.stop="confirmDeleteProject(project)"
+          :disabled="deletingId === project.id"
+          class="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 hover:bg-error transition-all flex items-center justify-center disabled:opacity-50"
+          title="删除项目"
+        >
+          <span class="material-symbols-outlined text-base">{{ deletingId === project.id ? 'autorenew' : 'delete' }}</span>
+        </button>
+
+        <div @click="openProject(project)" class="cursor-pointer">
+          <div class="aspect-video bg-surface-container relative overflow-hidden">
+            <img
+              v-if="getCover(project.id)"
+              :src="getCover(project.id)"
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+            <div v-else class="w-full h-full flex items-center justify-center">
+              <span class="material-symbols-outlined text-5xl text-on-surface-variant/20">{{ project.type === 'drama' ? 'theater_comedy' : 'videocam' }}</span>
+            </div>
+            <span class="absolute top-2 left-2 text-xs font-bold px-2 py-1 rounded-full"
+              :class="project.type === 'drama' ? 'bg-primary/20 text-primary' : 'bg-tertiary/20 text-tertiary'">
+              {{ project.type === 'drama' ? '短剧' : '视频' }}
+            </span>
+            <span class="absolute bottom-2 right-2 text-xs font-bold px-2 py-1 rounded-full"
+              :class="getStatusClass(project.status)">
+              {{ getStatusLabel(project.status) }}
+            </span>
           </div>
-          <span class="absolute top-2 left-2 text-xs font-bold px-2 py-1 rounded-full"
-            :class="project.type === 'drama' ? 'bg-primary/20 text-primary' : 'bg-tertiary/20 text-tertiary'">
-            {{ project.type === 'drama' ? '短剧' : '视频' }}
-          </span>
-          <span class="absolute top-2 right-2 text-xs font-bold px-2 py-1 rounded-full"
-            :class="getStatusClass(project.status)">
-            {{ getStatusLabel(project.status) }}
-          </span>
-        </div>
-        <div class="p-4">
-          <h3 class="font-bold mb-1 truncate">{{ project.name }}</h3>
-          <p class="text-xs text-on-surface-variant mb-3 line-clamp-2">{{ project.description || '暂无描述' }}</p>
-          <div class="flex justify-between items-center">
-            <span class="text-xs text-on-surface-variant">{{ formatDate(project.updated_at) }}</span>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-on-surface-variant">{{ getProgressLabel(project) }}</span>
-              <div class="h-1 w-16 bg-surface-container rounded-full overflow-hidden">
-                <div class="h-full bg-primary transition-all" :style="{ width: getProgress(project) + '%' }"></div>
+          <div class="p-4">
+            <h3 class="font-bold mb-1 truncate">{{ project.name }}</h3>
+            <p class="text-xs text-on-surface-variant mb-3 line-clamp-2">{{ project.description || '暂无描述' }}</p>
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-on-surface-variant">{{ formatDate(project.updated_at) }}</span>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-on-surface-variant">{{ getProgressLabel(project) }}</span>
+                <div class="h-1 w-16 bg-surface-container rounded-full overflow-hidden">
+                  <div class="h-full bg-primary transition-all" :style="{ width: getProgress(project) + '%' }"></div>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirm Dialog -->
+    <div v-if="deleteTarget" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-8" @click.self="deleteTarget = null">
+      <div class="bg-surface-container-lowest rounded-lg max-w-md w-full p-6 shadow-2xl">
+        <div class="flex items-start gap-3 mb-4">
+          <div class="p-2 bg-error/10 rounded-lg">
+            <span class="material-symbols-outlined text-error">warning</span>
+          </div>
+          <div class="flex-1">
+            <h3 class="font-bold text-lg mb-1">确认删除项目</h3>
+            <p class="text-sm text-on-surface-variant">即将删除 <strong class="text-on-surface">"{{ deleteTarget.name }}"</strong> 及其所有数据：</p>
+          </div>
+        </div>
+        <ul class="text-xs text-on-surface-variant bg-surface-container-low rounded-lg p-3 mb-4 space-y-1">
+          <li class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">person</span>所有角色及其形象图</li>
+          <li class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">movie</span>所有剧集封面、片段视频</li>
+          <li class="flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">folder_delete</span>媒体文件夹（无法恢复）</li>
+        </ul>
+        <div class="flex justify-end gap-2">
+          <button @click="deleteTarget = null" class="px-4 py-2 text-sm font-bold rounded-full bg-surface-container hover:bg-surface-container-high transition-colors">
+            取消
+          </button>
+          <button
+            @click="executeDelete"
+            :disabled="deletingId !== null"
+            class="px-4 py-2 text-sm font-bold rounded-full bg-error text-white hover:brightness-110 transition-all disabled:opacity-50"
+          >
+            {{ deletingId !== null ? '删除中...' : '确认删除' }}
+          </button>
         </div>
       </div>
     </div>
@@ -96,6 +139,8 @@ const projects = ref([])
 const covers = ref({})
 const filterType = ref('')
 const filterStatus = ref('')
+const deleteTarget = ref(null)
+const deletingId = ref(null)
 
 const filteredProjects = computed(() => {
   let result = projects.value
@@ -181,6 +226,26 @@ const loadProjects = async () => {
     covers.value = map
   } catch (error) {
     console.error('Failed to load projects:', error)
+  }
+}
+
+const confirmDeleteProject = (project) => {
+  deleteTarget.value = project
+}
+
+const executeDelete = async () => {
+  if (!deleteTarget.value) return
+  const id = deleteTarget.value.id
+  deletingId.value = id
+  try {
+    await projectsApi.delete(id)
+    projects.value = projects.value.filter(p => p.id !== id)
+    deleteTarget.value = null
+  } catch (error) {
+    console.error('Failed to delete project:', error)
+    alert('删除失败：' + (error.response?.data?.detail || error.message))
+  } finally {
+    deletingId.value = null
   }
 }
 

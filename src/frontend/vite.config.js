@@ -10,7 +10,7 @@ export default defineConfig({
     }
   },
   server: {
-    port: 5173,
+    port: 8362,
     proxy: {
       '/api': {
         target: 'http://localhost:8010',
@@ -20,6 +20,10 @@ export default defineConfig({
         target: 'http://localhost:8010',
         changeOrigin: true
       }
+    },
+    // Allow large video files to be loaded
+    fs: {
+      allow: ['..']
     }
   }
 })

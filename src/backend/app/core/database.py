@@ -168,7 +168,7 @@ class GeneratedVideo(Base):
 
 
 class Storyboard(Base):
-    """Episode model — each row = one episode (~20s) of the anime short drama"""
+    """Episode model — each row = one episode (~60s) of the anime short drama"""
     __tablename__ = "storyboards"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -181,25 +181,65 @@ class Storyboard(Base):
 
     # Episode data
     title = Column(String(200))
-    episode_script = Column(Text)          # Full mini-script for this episode
+    episode_script = Column(Text)          # Full script for this episode (~60s)
     dialogue_lines = Column(JSON, default=list)  # [{speaker, text, emotion}, ...]
     character_ids = Column(JSON, default=list)   # [1, 2] — character IDs appearing in this episode
     shot_type = Column(String(50))        # kept for backward compat
     description = Column(Text)            # Episode synopsis
-    image_prompt = Column(Text)           # AI image prompt (anime style)
-    video_prompt = Column(Text)           # AI video prompt (anime style, ~20s)
-    duration = Column(Integer, default=20)  # Target ~20s per episode
+    image_prompt = Column(Text)           # AI image prompt for cover
+    video_prompt = Column(Text)           # AI video prompt (deprecated, segments handle this)
+    duration = Column(Integer, default=60)  # Target ~60s per episode
+
+    # Generated resources (cover image for episode)
+    image_url = Column(String(500))
+    video_url = Column(String(500))       # deprecated, use segments
+    audio_url = Column(String(500))       # deprecated, video includes audio now
+
+    # Status
+    status = Column(String(50), default="pending")
+    image_status = Column(String(50), default="pending")
+    audio_status = Column(String(50), default="pending")   # deprecated
+    video_status = Column(String(50), default="pending")   # derived from segments
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Segment(Base):
+    """Segment model — each row = one ~15s video segment within an episode"""
+    __tablename__ = "segments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    storyboard_id = Column(Integer, ForeignKey("storyboards.id"), nullable=False)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+
+    # Segment ordering within episode
+    segment_number = Column(Integer, default=0)  # 1-based within episode
+
+    # Segment content
+    visual_description = Column(Text)       # 视觉描述 (what the camera sees)
+    camera_movement = Column(String(200))    # 镜头运动 (pan/tilt/zoom/dolly/tracking/fixed)
+    dialogue = Column(Text)                  # 台词 (inline, e.g. "角色名：台词内容")
+    character_ids = Column(JSON, default=list)  # [1, 2] — character IDs in this segment
+    character_image_refs = Column(JSON, default=dict)  # {char_id: image_url} — reference images for video gen
+
+    # AI prompts
+    image_prompt = Column(Text)              # Cover/thumbnail image prompt
+    video_prompt = Column(Text)              # Video generation prompt (with character refs + audio)
 
     # Generated resources
-    image_url = Column(String(500))
-    video_url = Column(String(500))
-    audio_url = Column(String(500))
+    image_url = Column(String(500))          # Segment cover/thumbnail
+    video_url = Column(String(500))          # Generated video (includes audio from Seedance)
 
-    # Status (per-stage tracking for i2v pipeline: cover → audio → video)
-    status = Column(String(50), default="pending")  # kept for backward compat, derived from stage statuses
-    image_status = Column(String(50), default="pending")   # pending/processing/completed/failed
-    audio_status = Column(String(50), default="pending")   # pending/processing/completed/failed
-    video_status = Column(String(50), default="pending")   # pending/processing/completed/failed
+    # Generation params
+    duration = Column(Integer, default=15)    # Target ~15s per segment
+    model_provider = Column(String(100))      # e.g. "seedance", "wanx"
+    generation_params = Column(JSON, default=dict)
+
+    # Status
+    status = Column(String(50), default="pending")
+    image_status = Column(String(50), default="pending")
+    video_status = Column(String(50), default="pending")
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -77,11 +77,12 @@
         >
           <div class="aspect-video bg-surface-container">
             <img
-              v-if="project.thumbnail"
-              :src="project.thumbnail"
+              v-if="covers[project.id]"
+              :src="covers[project.id]"
               class="w-full h-full object-cover"
+              @error="(e) => e.target.style.display = 'none'"
             />
-            <div v-else class="w-full h-full flex items-center justify-center">
+            <div v-if="!covers[project.id]" class="w-full h-full flex items-center justify-center">
               <span class="material-symbols-outlined text-4xl text-on-surface-variant opacity-30">movie</span>
             </div>
           </div>
@@ -98,10 +99,20 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { projectsApi } from '@/api/projects'
+import { storyboardApi } from '@/api/storyboard'
 
 const recentProjects = ref([])
 const loading = ref(true)
 const error = ref('')
+const covers = ref({})
+
+function toPlayableUrl(url) {
+  if (!url) return null
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  const idx = url.indexOf('/media/')
+  if (idx !== -1) return url.substring(idx)
+  return url
+}
 
 const formatDate = (date) => {
   if (!date) return ''
@@ -112,6 +123,18 @@ onMounted(async () => {
   try {
     const response = await projectsApi.getAll()
     recentProjects.value = response.data.slice(0, 6)
+    // Load cover images from first episode
+    const coverResults = await Promise.allSettled(
+      recentProjects.value.map(p =>
+        storyboardApi.getByProject(p.id)
+          .then(r => {
+            const eps = (r.data || []).sort((a, b) => (a.episode_number || 0) - (b.episode_number || 0))
+            const withCover = eps.find(e => e.image_url)
+            if (withCover) covers.value[p.id] = toPlayableUrl(withCover.image_url)
+          })
+          .catch(() => {})
+      )
+    )
   } catch (e) {
     console.error('Failed to load projects:', e)
     error.value = '加载项目失败，请检查后端服务是否运行'

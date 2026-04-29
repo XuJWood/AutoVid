@@ -38,8 +38,17 @@
                 <button
                   @click="editCharacter(character)"
                   class="px-3 py-2 text-xs bg-surface-container text-on-surface-variant rounded-lg hover:bg-surface-container-high transition-colors"
+                  title="编辑"
                 >
                   <span class="material-symbols-outlined text-sm">edit</span>
+                </button>
+                <button
+                  @click="confirmDeleteCharacter(character)"
+                  :disabled="deletingCharId === character.id"
+                  class="px-3 py-2 text-xs bg-error/10 text-error rounded-lg hover:bg-error/20 transition-colors disabled:opacity-50"
+                  title="删除角色"
+                >
+                  <span class="material-symbols-outlined text-sm">{{ deletingCharId === character.id ? 'autorenew' : 'delete' }}</span>
                 </button>
               </div>
             </div>
@@ -212,7 +221,7 @@
                 {{ ep.environment || ep.location }}
                 <span v-if="ep.time"> · {{ ep.time }}</span>
                 <span v-if="ep.mood"> · {{ ep.mood }}</span>
-                <span class="ml-2 text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{{ ep.duration || 20 }}s</span>
+                <span class="ml-2 text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{{ ep.duration || 60 }}s</span>
               </p>
               <p class="text-sm mb-3 text-on-surface-variant">{{ ep.description }}</p>
 
@@ -236,8 +245,34 @@
                 </div>
               </div>
 
-              <!-- 镜头列表 -->
-              <div class="space-y-2">
+              <!-- Segments (片段列表) -->
+              <div v-if="ep.segments && ep.segments.length > 0" class="space-y-2">
+                <p class="text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-wider">片段 ({{ ep.segments.length }}段)</p>
+                <div
+                  v-for="seg in ep.segments"
+                  :key="seg.segment_number"
+                  class="bg-surface-container-low p-3 rounded-lg border-l-2 border-primary/30"
+                >
+                  <div class="flex items-center justify-between mb-1">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">段{{ seg.segment_number }}</span>
+                      <span v-if="seg.camera_movement" class="text-xs text-on-surface-variant flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs">videocam</span>
+                        {{ seg.camera_movement }}
+                      </span>
+                    </div>
+                    <span class="text-xs font-bold text-on-surface-variant">{{ seg.duration || 15 }}s</span>
+                  </div>
+                  <p class="text-xs mb-1 leading-relaxed">{{ seg.visual_description }}</p>
+                  <p v-if="seg.dialogue" class="text-xs text-primary bg-primary/5 p-2 rounded italic mt-1">
+                    <span class="material-symbols-outlined text-xs align-middle">record_voice_over</span>
+                    {{ seg.dialogue }}
+                  </p>
+                </div>
+              </div>
+              <!-- Fallback: shots (old format) -->
+              <div v-else-if="ep.shots && ep.shots.length > 0" class="space-y-2">
+                <p class="text-xs font-bold text-on-surface-variant mb-2 uppercase tracking-wider">镜头 (旧格式)</p>
                 <div
                   v-for="shot in ep.shots"
                   :key="shot.id"
@@ -317,6 +352,34 @@
       @close="showCharacterModal = false"
       @select="onCharacterImageSelect"
     />
+
+    <!-- Delete Character Confirm Dialog -->
+    <div v-if="deleteCharTarget" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-8" @click.self="deleteCharTarget = null">
+      <div class="bg-surface-container-lowest rounded-lg max-w-md w-full p-6 shadow-2xl">
+        <div class="flex items-start gap-3 mb-4">
+          <div class="p-2 bg-error/10 rounded-lg">
+            <span class="material-symbols-outlined text-error">warning</span>
+          </div>
+          <div class="flex-1">
+            <h3 class="font-bold text-lg mb-1">确认删除角色</h3>
+            <p class="text-sm text-on-surface-variant">即将删除 <strong class="text-on-surface">"{{ deleteCharTarget.name }}"</strong>，三视图和表情图都会被清空。</p>
+            <p class="text-xs text-on-surface-variant/70 mt-2">提示：剧本里的台词不受影响，但视频生成时将失去该角色的形象一致性。</p>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <button @click="deleteCharTarget = null" class="px-4 py-2 text-sm font-bold rounded-full bg-surface-container hover:bg-surface-container-high transition-colors">
+            取消
+          </button>
+          <button
+            @click="executeDeleteCharacter"
+            :disabled="deletingCharId !== null"
+            class="px-4 py-2 text-sm font-bold rounded-full bg-error text-white hover:brightness-110 transition-all disabled:opacity-50"
+          >
+            {{ deletingCharId !== null ? '删除中...' : '确认删除' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -348,6 +411,8 @@ const customPrompt = ref('')
 const episodeTier = ref('short')
 const showCharacterModal = ref(false)
 const selectedCharacter = ref(null)
+const deleteCharTarget = ref(null)
+const deletingCharId = ref(null)
 const loading = ref(true)
 const isEditing = ref(false)
 const saving = ref(false)
@@ -537,6 +602,26 @@ const onCharacterImageSelect = async ({ characterId, imageUrl }) => {
     loadProject()
   } catch (error) {
     console.error('Failed to select image:', error)
+  }
+}
+
+const confirmDeleteCharacter = (character) => {
+  deleteCharTarget.value = character
+}
+
+const executeDeleteCharacter = async () => {
+  if (!deleteCharTarget.value) return
+  const id = deleteCharTarget.value.id
+  deletingCharId.value = id
+  try {
+    await charactersApi.delete(id)
+    characters.value = characters.value.filter(c => c.id !== id)
+    deleteCharTarget.value = null
+  } catch (error) {
+    console.error('Failed to delete character:', error)
+    alert('删除失败：' + (error.response?.data?.detail || error.message))
+  } finally {
+    deletingCharId.value = null
   }
 }
 

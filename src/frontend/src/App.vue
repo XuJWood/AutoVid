@@ -17,7 +17,9 @@ import BottomNavBar from '@/components/BottomNavBar.vue'
 const route = useRoute()
 
 const showBottomNav = computed(() => {
-  const hiddenRoutes = ['/', '/settings', '/characters', '/projects']
-  return !hiddenRoutes.some(r => route.path.startsWith(r))
+  const hiddenOnExact = ['/']
+  if (hiddenOnExact.includes(route.path)) return false
+  const hiddenOnPrefix = ['/settings', '/characters', '/projects']
+  return !hiddenOnPrefix.some(r => route.path.startsWith(r))
 })
 </script>

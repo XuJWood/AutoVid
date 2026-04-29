@@ -76,12 +76,16 @@ class OpenAIService(BaseAIService):
 
 
 class ClaudeService(BaseAIService):
-    """Anthropic Claude service"""
+    """Anthropic Claude service (also supports Anthropic-compatible endpoints like DeepSeek's /anthropic)."""
 
     def __init__(self, api_key: str, base_url: Optional[str] = None, model: str = "claude-3-opus-20240229", **kwargs):
         super().__init__(api_key, base_url, **kwargs)
         self.model = model
-        self.client = AsyncAnthropic(api_key=api_key)
+        # Pass base_url through to AsyncAnthropic when provided — supports DeepSeek anthropic-compat endpoint
+        if base_url:
+            self.client = AsyncAnthropic(api_key=api_key, base_url=base_url)
+        else:
+            self.client = AsyncAnthropic(api_key=api_key)
 
     async def generate(
         self,
@@ -219,6 +223,13 @@ def get_llm_service(provider: str, api_key: str, model: Optional[str] = None, **
         from .alibaba_cloud import QwenService
         default_model = model or "qwen-plus"
         return QwenService(api_key=api_key, model=default_model, **kwargs)
+
+    # DeepSeek Anthropic-compatible endpoint (deepseek-v4-pro / claude-style API)
+    # Uses Anthropic SDK pointing at https://api.deepseek.com/anthropic
+    if provider_lower in ["deepseek-anthropic", "deepseek_anthropic", "deepseek-v4"]:
+        default_model = model or "deepseek-v4-pro"
+        base_url = kwargs.pop("base_url", None) or "https://api.deepseek.com/anthropic"
+        return ClaudeService(api_key=api_key, base_url=base_url, model=default_model, **kwargs)
 
     service_class = services.get(provider_lower)
     if not service_class:

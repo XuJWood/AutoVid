@@ -1,6 +1,7 @@
 """
 Characters API endpoints
 """
+import os
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -90,11 +91,41 @@ class GenerateImageResponse(BaseModel):
 
 
 class GenerateThreeViewsRequest(BaseModel):
-    style: Optional[str] = "realistic"
+    style: Optional[str] = "anime"
     prompt_suffix: Optional[str] = ""
+    custom_prompt: Optional[str] = ""  # 自定义完整提示词（覆盖自动生成的）
 
 
 # API Endpoints
+
+def _normalize_url(url):
+    """Convert any path/URL to /media/... format for frontend rendering."""
+    if not url or not isinstance(url, str):
+        return url
+    if url.startswith("http://") or url.startswith("https://") or url.startswith("/media/"):
+        return url
+    if "/media/" in url:
+        return url[url.index("/media/"):]
+    # Absolute filesystem path → use local_path_to_url
+    if url.startswith("/"):
+        from app.services.media_storage import local_path_to_url
+        normalized = local_path_to_url(url)
+        return normalized if normalized else url
+    return url
+
+
+def _normalize_character(c: Character) -> None:
+    """Normalize all image-bearing fields to /media/... URLs."""
+    if c.selected_image:
+        c.selected_image = _normalize_url(c.selected_image)
+    if isinstance(c.alternative_images, list):
+        c.alternative_images = [_normalize_url(u) for u in c.alternative_images if u]
+    if isinstance(c.three_views, dict):
+        c.three_views = {
+            k: (_normalize_url(v) if isinstance(v, str) else v)
+            for k, v in c.three_views.items()
+        }
+
 
 @router.get("", response_model=List[CharacterResponse])
 async def get_characters(
@@ -109,7 +140,10 @@ async def get_characters(
     if style:
         query = query.where(Character.style == style)
     result = await db.execute(query)
-    return result.scalars().all()
+    characters = result.scalars().all()
+    for c in characters:
+        _normalize_character(c)
+    return characters
 
 
 @router.get("/{character_id}", response_model=CharacterResponse)
@@ -119,6 +153,7 @@ async def get_character(character_id: int, db: AsyncSession = Depends(get_db)):
     character = result.scalar_one_or_none()
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
+    _normalize_character(character)
     return character
 
 
@@ -181,15 +216,32 @@ async def update_character(
 
 @router.delete("/{character_id}")
 async def delete_character(character_id: int, db: AsyncSession = Depends(get_db)):
-    """Delete a character"""
+    """Delete a character and clean up its media folder."""
+    import shutil
+    from app.services.media_storage import get_character_dir
+
     result = await db.execute(select(Character).where(Character.id == character_id))
     character = result.scalar_one_or_none()
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
 
+    # Capture media path before deletion
+    project_id = character.project_id
+    name = character.name
+
     await db.delete(character)
     await db.commit()
-    return {"message": "Character deleted successfully"}
+
+    # Remove character's media folder (best-effort)
+    if project_id and name:
+        try:
+            char_dir = get_character_dir(project_id, name)
+            if os.path.isdir(char_dir):
+                shutil.rmtree(char_dir)
+        except Exception as e:
+            print(f"[delete_character] Failed to remove media dir: {e}")
+
+    return {"message": "Character deleted successfully", "character_id": character_id}
 
 
 @router.post("/{character_id}/generate-image", response_model=GenerateImageResponse)
@@ -269,6 +321,48 @@ async def generate_character_image(
     )
 
 
+@router.get("/{character_id}/preview-three-views-prompt")
+async def preview_three_views_prompt(
+    character_id: int,
+    style: Optional[str] = "anime",
+    prompt_suffix: Optional[str] = "",
+    db: AsyncSession = Depends(get_db)
+):
+    """预览三视图生成提示词（不实际生成，供用户编辑）"""
+    result = await db.execute(select(Character).where(Character.id == character_id))
+    character = result.scalar_one_or_none()
+    if not character:
+        raise HTTPException(status_code=404, detail="Character not found")
+
+    desc_parts = []
+    if character.appearance:
+        desc_parts.append(character.appearance)
+    if character.clothing:
+        desc_parts.append(f"wearing {character.clothing}")
+    base_desc = ", ".join(desc_parts) if desc_parts else character.name
+    if prompt_suffix:
+        base_desc += f", {prompt_suffix}"
+
+    effective_style = style or "anime"
+    style_tags = "Japanese anime style, 日系动漫, vibrant colors, high quality, clean lineart"
+    if character.gender == "女":
+        style_tags += ", beautiful anime girl, sexy cute, alluring, delicate features, soft facial lines, eye-catching"
+
+    combined_prompt = (
+        f"character design sheet, full body turnaround, "
+        f"{base_desc}, "
+        f"{effective_style} style, {style_tags}, "
+        f"multiple views: front view full body standing straight looking at viewer, "
+        f"side view full body standing at 45 degree angle, "
+        f"back view full body from behind, "
+        f"and facial expressions chart with 4 expressions: happy smiling, angry shouting, surprised shocked, sad crying, "
+        f"all arranged in a clean professional character reference sheet layout, "
+        f"clean white background, character design reference sheet, model sheet, high resolution"
+    )
+
+    return {"character_id": character_id, "prompt": combined_prompt, "style": effective_style}
+
+
 @router.post("/{character_id}/generate-three-views")
 async def generate_character_three_views(
     character_id: int,
@@ -282,7 +376,8 @@ async def generate_character_three_views(
     result = await service.generate_three_views(
         character_id=character_id,
         style=request.style or "anime",
-        prompt_suffix=request.prompt_suffix or ""
+        prompt_suffix=request.prompt_suffix or "",
+        custom_prompt=request.custom_prompt or ""
     )
 
     if "error" in result:
